@@ -1,0 +1,11 @@
+<div class="board">
+  @for (row of game.board(); track $index) {
+    <div class="row">
+      @for (cell of row; track cell.col) {
+        <app-cell [cell]="cell" />
+      }
+    </div>
+  } @empty {
+    <p>Board goes here.</p>
+  }
+</div>
