@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { countMines, getNeighbors } from './board-logic';
 import { GameService } from './game.service';
+import { SettingsService } from './settings.service';
 
 describe('GameService', () => {
   let game: GameService;
@@ -78,12 +79,12 @@ describe('GameService', () => {
     });
 
     it('flag mode makes a normal click toggle flags', () => {
-      game.toggleFlagMode();
+      game.setFlagMode(true);
       game.primaryAction(1, 1);
       expect(game.board()[1][1].isFlagged).toBe(true);
       expect(game.board()[1][1].isRevealed).toBe(false);
 
-      game.toggleFlagMode();
+      game.setFlagMode(false);
       game.primaryAction(4, 4);
       expect(game.board()[4][4].isRevealed).toBe(true);
     });
@@ -91,6 +92,36 @@ describe('GameService', () => {
     it('secondary action flags hidden cells', () => {
       game.secondaryAction(0, 0);
       expect(game.board()[0][0].isFlagged).toBe(true);
+    });
+  });
+
+  describe('settings', () => {
+    it('does not chord on a single click when chordOnClick is off', () => {
+      TestBed.inject(SettingsService).update({ chordOnClick: false });
+      // Fixed pseudo-random sequence, so the board always has a number to chord.
+      let seed = 7;
+      game.random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+      game.reveal(4, 4);
+      const target = game
+        .board()
+        .flat()
+        .find(
+          (cell) =>
+            cell.isRevealed &&
+            cell.adjacentMines > 0 &&
+            getNeighbors(game.board(), cell.row, cell.col).some((n) => !n.isRevealed && !n.hasMine),
+        );
+      if (!target) throw new Error('Board has no revealed number');
+      getNeighbors(game.board(), target.row, target.col)
+        .filter((n) => n.hasMine)
+        .forEach((n) => game.toggleFlag(n.row, n.col));
+      const before = game.board();
+
+      game.primaryAction(target.row, target.col);
+      expect(game.board()).toBe(before);
+
+      game.chord(target.row, target.col);
+      expect(game.board()).not.toBe(before);
     });
   });
 

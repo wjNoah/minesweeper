@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { CellState } from '../../models/cell.model';
 
 const LONG_PRESS_MS = 400;
@@ -7,15 +8,9 @@ const MOVE_TOLERANCE_PX = 10;
 
 type CellView = 'hidden' | 'flagged' | 'wrong-flag' | 'mine' | 'exploded' | 'number' | 'empty';
 
-const SYMBOLS: Partial<Record<CellView, string>> = {
-  flagged: '🚩',
-  'wrong-flag': '❌',
-  mine: '💣',
-  exploded: '💥',
-};
-
 @Component({
   selector: 'app-cell',
+  imports: [NgTemplateOutlet],
   templateUrl: './cell.html',
   styleUrl: './cell.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -26,6 +21,10 @@ export class Cell {
   readonly lost = input(false);
   /** The one cell that is reachable with Tab (roving tabindex). */
   readonly focusable = input(false);
+  /** Hidden neighbor of the number under the pointer or keyboard cursor. */
+  readonly highlighted = input(false);
+  /** Vibrate when a long press flags the cell (on phones that support it). */
+  readonly haptics = input(true);
 
   /** Click or tap. */
   readonly primary = output<void>();
@@ -51,11 +50,6 @@ export class Cell {
       if (hasMine && !isFlagged) return 'mine';
     }
     return isFlagged ? 'flagged' : 'hidden';
-  });
-
-  protected readonly symbol = computed(() => {
-    const view = this.view();
-    return view === 'number' ? String(this.cell().adjacentMines) : (SYMBOLS[view] ?? '');
   });
 
   protected readonly label = computed(() => {
@@ -123,7 +117,7 @@ export class Cell {
     this.cancelPress();
     // The browser still sends a click when the finger lifts, which must not reveal the cell.
     this.suppressNextClick = true;
-    navigator.vibrate?.(30);
+    if (this.haptics()) navigator.vibrate?.(30);
     this.secondary.emit();
   }
 }

@@ -4,36 +4,87 @@
   align-items: center;
   gap: 1.25rem;
   max-width: 100%;
-  padding: 1.5rem 1rem 3rem;
+  padding: 2.5rem 1.25rem 4rem;
 }
 
-@media (max-width: 600px) {
-  .app {
-    padding-inline: 0.5rem;
+.top,
+app-game-header,
+app-controls-hint {
+  width: min(100%, 42rem);
+}
+
+// Desktop: title, difficulty, tools in one row. Phone: title and tools, then difficulty.
+.top {
+  display: grid;
+  grid-template-areas: 'title picker tools';
+  grid-template-columns: 1fr auto auto;
+  align-items: start;
+  gap: 1rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--line);
+
+  h1 {
+    grid-area: title;
+  }
+
+  app-difficulty-picker {
+    grid-area: picker;
+  }
+
+  .tools {
+    grid-area: tools;
   }
 }
 
 h1 {
   margin: 0;
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  // Same height as the difficulty tabs, so both line up when the custom form opens.
+  line-height: 42px;
 }
 
-.controls {
-  max-width: 40rem;
-  color: var(--text-muted);
-  font-size: 0.9rem;
+.tools {
+  display: flex;
+  gap: 0.25rem;
+}
 
-  h2 {
-    margin: 0 0 0.25rem;
-    color: var(--text);
-    font-size: 1rem;
+.icon-button {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  transition: border-color 150ms ease;
+
+  &:hover {
+    border-color: var(--ink-muted);
   }
 
-  ul {
-    margin: 0;
-    padding-left: 1.25rem;
+  svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+}
+
+@media (max-width: 600px) {
+  .app {
+    gap: 1rem;
+    padding: 1.5rem 0.75rem 3rem;
   }
 
-  li + li {
-    margin-top: 0.25rem;
+  .top {
+    grid-template-areas:
+      'title tools'
+      'picker picker';
+    grid-template-columns: 1fr auto;
   }
 }

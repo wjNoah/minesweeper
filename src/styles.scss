@@ -1,76 +1,87 @@
-// Theme colors. Every number color has at least 4.5:1 contrast on --cell-revealed.
-:root {
-  color-scheme: light dark;
-  --cell-size: 32px;
+// Design tokens: warm paper and graphite ink, one blue for focus, red only for danger.
+// Every number color has at least 4.5:1 contrast on --tile-open, in both themes.
+@mixin dark-theme {
+  color-scheme: dark;
+  --paper: #151513;
+  --surface: #1f1e1b;
+  --ink: #ecebe6;
+  --ink-muted: #a3a097;
+  --line: #2f2e2a;
+  --track: #262522;
+  --focus: #7aa2ff;
+  --danger: #e0574b;
+  --success: #6cc68b;
 
-  --bg: #f4f5f7;
-  --surface: #ffffff;
-  --text: #1c1e21;
-  --text-muted: #4a4f57;
-  --border: #9aa0a8;
-  --accent: #1f5fbf;
-  --accent-text: #ffffff;
-  --focus: #e07b00;
-  --danger: #e04848;
+  --tile: #3a3934;
+  --tile-hover: #45443e;
+  --tile-edge: #2a2925;
+  --tile-open: #1b1a18;
+  --flag: #ef6a5e;
 
-  --board-bg: #9aa0a8;
-  --cell-hidden: #c9ced6;
-  --cell-hover: #d8dce2;
-  --cell-revealed: #eef0f3;
-  --cell-border: #7d838c;
-  --cell-highlight: #eef0f3;
-  --cell-shadow: #8c929b;
-  --counter-bg: #1c1e21;
-  --counter-text: #ff5a4f;
-
-  --n1: #1748c4;
-  --n2: #1b6e1b;
-  --n3: #c21f1f;
-  --n4: #3b1f8f;
-  --n5: #8a2a0b;
-  --n6: #006b63;
-  --n7: #1c1e21;
-  --n8: #555b63;
+  --n1: #86aaff;
+  --n2: #74c98f;
+  --n3: #f2867b;
+  --n4: #c1a9ff;
+  --n5: #f0a868;
+  --n6: #5fd2c8;
+  --n7: #ecebe6;
+  --n8: #a3a097;
 }
 
+:root {
+  color-scheme: light dark;
+  // --cell-scale is set from the cell size setting.
+  --cell-scale: 1;
+  --cell-size: calc(32px * var(--cell-scale));
+  --radius: 10px;
+  --font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --paper: #f5f3ee;
+  --surface: #ffffff;
+  --ink: #1d1c1a;
+  --ink-muted: #66645e;
+  --line: #e2dfd7;
+  --track: #e9e6df;
+  --focus: #2f62d9;
+  --danger: #c8372d;
+  --success: #2c7a47;
+
+  --tile: #dedad1;
+  --tile-hover: #d3cec3;
+  --tile-edge: #bdb7aa;
+  --tile-open: #fbfaf7;
+  --flag: #c8372d;
+
+  --n1: #2a56c9;
+  --n2: #2c7a47;
+  --n3: #c33a2f;
+  --n4: #5b3fb0;
+  --n5: #93450f;
+  --n6: #12716f;
+  --n7: #1d1c1a;
+  --n8: #66645e;
+}
+
+// Dark theme: follows the system unless the user picked a theme in settings.
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #15171a;
-    --surface: #23262b;
-    --text: #e8eaed;
-    --text-muted: #b4b9c0;
-    --border: #5a606a;
-    --accent: #6ea8ff;
-    --accent-text: #0d1117;
-    --focus: #ffb347;
-    --danger: #c43c3c;
-
-    --board-bg: #3a3f47;
-    --cell-hidden: #4a505a;
-    --cell-hover: #575e69;
-    --cell-revealed: #262a30;
-    --cell-border: #1d2025;
-    --cell-highlight: #636a76;
-    --cell-shadow: #30343b;
-    --counter-bg: #0b0c0e;
-    --counter-text: #ff6b61;
-
-    --n1: #7fb2ff;
-    --n2: #7ad67a;
-    --n3: #ff8a80;
-    --n4: #c3a8ff;
-    --n5: #ffb07a;
-    --n6: #5fdccf;
-    --n7: #e8eaed;
-    --n8: #b4b9c0;
+  :root:not([data-theme='light']) {
+    @include dark-theme;
   }
 }
 
+:root[data-theme='dark'] {
+  @include dark-theme;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
 // Bigger cells for fingers on small screens: as large as fits 9 columns
-// (beginner) next to the page and board padding, between 32px and 40px.
+// (beginner) next to the page padding, board padding and gaps, at least 32px.
 @media (max-width: 600px) {
   :root {
-    --cell-size: clamp(32px, calc((100vw - 1rem - 32px) / 9), 40px);
+    --cell-size: clamp(32px, calc((100vw - 1.5rem - 38px) / 9), calc(40px * var(--cell-scale)));
   }
 }
 
@@ -82,17 +93,15 @@
 
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: system-ui, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 1rem / 1.5 var(--font);
+  -webkit-font-smoothing: antialiased;
 }
 
 button,
 input {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--text);
+  color: inherit;
   font: inherit;
 }
 
@@ -101,18 +110,72 @@ button {
 }
 
 :focus-visible {
-  outline: 3px solid var(--focus);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
-kbd {
-  padding: 0 0.3em;
-  border: 1px solid var(--border);
-  border-radius: 4px;
+// Shared segmented control (difficulty tabs, reveal/flag switch).
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 9px;
+  background: var(--track);
+
+  button {
+    min-height: 36px;
+    padding: 0 0.9rem;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--ink-muted);
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition:
+      background-color 150ms ease,
+      color 150ms ease;
+
+    &:hover {
+      color: var(--ink);
+    }
+
+    &[aria-pressed='true'] {
+      background: var(--surface);
+      box-shadow:
+        0 1px 2px rgb(0 0 0 / 0.08),
+        0 0 0 1px var(--line);
+      color: var(--ink);
+      font-weight: 600;
+    }
+  }
+}
+
+.button {
+  min-height: 42px;
+  padding: 0 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 9px;
   background: var(--surface);
-  font:
-    0.85em ui-monospace,
-    monospace;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: border-color 150ms ease;
+
+  &:hover {
+    border-color: var(--ink-muted);
+  }
+}
+
+kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0 0.35em;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--ink);
+  font: 500 0.75rem / 1.5 var(--font);
+  text-align: center;
 }
 
 .sr-only {
@@ -122,4 +185,13 @@ kbd {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
 }

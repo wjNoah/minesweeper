@@ -1,0 +1,50 @@
+:host {
+  display: block;
+  margin-top: 1rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+
+h2 {
+  margin: 0 0 0.75rem;
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+dl {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+}
+
+div {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr;
+  gap: 1rem;
+}
+
+dt {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+dd,
+.more {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}
+
+.more {
+  margin-top: 0.9rem;
+}
+
+@media (max-width: 600px) {
+  div {
+    grid-template-columns: 1fr;
+    gap: 0.1rem;
+  }
+}

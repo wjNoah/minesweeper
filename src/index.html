@@ -6,6 +6,18 @@
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <script>
+    // Apply the saved theme and cell size before the first paint, so the page doesn't flash.
+    try {
+      const settings = JSON.parse(localStorage.getItem('minesweeper.settings') || '{}');
+      if (settings.theme === 'light' || settings.theme === 'dark') {
+        document.documentElement.dataset.theme = settings.theme;
+      }
+      if ([1, 1.25, 1.5].includes(settings.cellScale)) {
+        document.documentElement.style.setProperty('--cell-scale', settings.cellScale);
+      }
+    } catch {}
+  </script>
 </head>
 <body>
   <app-root></app-root>

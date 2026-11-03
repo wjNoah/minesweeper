@@ -91,6 +91,13 @@ describe('placeMines', () => {
     expect(countMines(board)).toBe(8);
   });
 
+  it('can keep only the clicked cell safe when safeArea is off', () => {
+    // 3x3 board, 8 mines: possible only if the neighbors of the click may hold mines.
+    const board = placeMines(createEmptyBoard(3, 3), 8, 0, 0, seededRandom(2), false);
+    expect(board[0][0].hasMine).toBe(false);
+    expect(getNeighbors(board, 0, 0).every((n) => n.hasMine)).toBe(true);
+  });
+
   it('throws when there are more mines than free cells', () => {
     expect(() => placeMines(createEmptyBoard(3, 3), 9, 1, 1)).toThrow();
   });

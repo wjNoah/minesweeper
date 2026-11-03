@@ -22,6 +22,15 @@ export class BestTimesService {
     }
     return true;
   }
+
+  clear(): void {
+    this.times.set({});
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Nothing stored, or storage blocked.
+    }
+  }
 }
 
 function loadBestTimes(): BestTimes {

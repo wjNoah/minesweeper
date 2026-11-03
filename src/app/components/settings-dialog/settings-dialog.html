@@ -1,0 +1,129 @@
+<dialog
+  #dialog
+  class="dialog"
+  aria-labelledby="settings-title"
+  (click)="onDialogClick($event)"
+  (close)="onClosed()"
+>
+  <div class="panel">
+    <header class="head">
+      <h2 id="settings-title">Settings</h2>
+      <button type="button" class="icon-button" aria-label="Close settings" (click)="close()">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+      </button>
+    </header>
+
+    <div class="body">
+      <section aria-labelledby="appearance-title">
+        <h3 id="appearance-title">Appearance</h3>
+        <div class="row choice">
+          <span class="label" id="theme-label">Theme</span>
+          <div class="segmented" role="group" aria-labelledby="theme-label">
+            @for (theme of themes; track theme.value) {
+              <button
+                type="button"
+                [attr.aria-pressed]="settings.settings().theme === theme.value"
+                (click)="setTheme(theme.value)"
+              >
+                {{ theme.label }}
+              </button>
+            }
+          </div>
+        </div>
+        <div class="row choice">
+          <span class="label" id="size-label">Cell size</span>
+          <div class="segmented" role="group" aria-labelledby="size-label">
+            @for (scale of cellScales; track scale.value) {
+              <button
+                type="button"
+                [attr.aria-pressed]="settings.settings().cellScale === scale.value"
+                (click)="setCellScale(scale.value)"
+              >
+                {{ scale.label }}
+              </button>
+            }
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="gameplay-title">
+        <h3 id="gameplay-title">Gameplay</h3>
+        @for (toggle of toggles; track toggle.key) {
+          <label class="row">
+            <span>
+              <span class="label">{{ toggle.label }}</span>
+              <span class="hint">{{ toggle.hint }}</span>
+            </span>
+            <input
+              type="checkbox"
+              role="switch"
+              [checked]="settings.settings()[toggle.key]"
+              (change)="setToggle(toggle.key, $event)"
+            />
+          </label>
+        }
+        <p class="hint note">The first-click setting applies from the next game.</p>
+      </section>
+
+      <section aria-labelledby="keys-title">
+        <h3 id="keys-title">Keyboard</h3>
+        <p class="hint">
+          Select an action, then press the new key. Arrow keys move and Enter reveals. Keys follow
+          your keyboard layout.
+        </p>
+        @for (action of keyActions; track action.id) {
+          <div class="row">
+            <span class="label">{{ action.label }}</span>
+            <button
+              type="button"
+              class="key-button"
+              [class.listening]="listeningFor() === action.id"
+              [attr.aria-label]="
+                listeningFor() === action.id
+                  ? action.label + ': press the new key, or Escape to cancel'
+                  : action.label + ': ' + keyLabel(settings.settings().keys[action.id]) + '. Change'
+              "
+              (click)="startListening(action.id)"
+              (keydown)="onBindingKeydown($event, action.id)"
+              (blur)="stopListening()"
+            >
+              @if (listeningFor() === action.id) {
+                Press a key
+              } @else {
+                {{ keyLabel(settings.settings().keys[action.id]) }}
+              }
+            </button>
+          </div>
+        }
+        <p class="error" aria-live="polite">{{ keyError() }}</p>
+      </section>
+
+      <section aria-labelledby="data-title">
+        <h3 id="data-title">Data</h3>
+        <div class="row">
+          <span>
+            <span class="label">Best times</span>
+            <span class="hint">Stored in this browser only.</span>
+          </span>
+          <button
+            type="button"
+            class="button"
+            [class.danger]="confirmingReset()"
+            (click)="resetBestTimes()"
+          >
+            {{ confirmingReset() ? 'Click again to delete' : 'Reset best times' }}
+          </button>
+        </div>
+        <div class="row">
+          <span class="label">All settings</span>
+          <button type="button" class="button" (click)="restoreDefaults()">Restore defaults</button>
+        </div>
+        <p class="hint" aria-live="polite">{{ statusMessage() }}</p>
+      </section>
+    </div>
+
+    <footer class="foot">
+      <button type="button" class="button primary" (click)="close()">Done</button>
+    </footer>
+  </div>
+</dialog>

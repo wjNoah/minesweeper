@@ -12,16 +12,36 @@
 .board {
   display: inline-flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 8px;
-  border-radius: 8px;
-  background: var(--board-bg);
+  gap: 3px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.04),
+    0 8px 24px -12px rgb(0 0 0 / 0.12);
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
+  transition: border-color 200ms ease;
+
+  // The status message says the result in words; the border only reinforces it.
+  &[data-status='won'] {
+    border-color: var(--success);
+  }
+
+  &[data-status='lost'] {
+    border-color: var(--danger);
+  }
 }
 
 .row {
   display: flex;
-  gap: 2px;
+  gap: 3px;
+}
+
+@media (max-width: 600px) {
+  .board {
+    padding: 6px;
+  }
 }

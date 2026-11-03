@@ -7,6 +7,7 @@ import {
   PRESETS,
 } from '../models/game.model';
 import { BestTimesService } from './best-times.service';
+import { SettingsService } from './settings.service';
 import {
   chordCell,
   countFlags,
@@ -24,6 +25,7 @@ import {
 @Injectable({ providedIn: 'root' })
 export class GameService {
   private readonly bestTimes = inject(BestTimesService);
+  private readonly settings = inject(SettingsService);
 
   readonly difficulty = signal<DifficultyId>('beginner');
   readonly config = signal<GameConfig>(PRESETS[0]);
@@ -64,16 +66,18 @@ export class GameService {
     this.newGame();
   }
 
-  toggleFlagMode(): void {
-    this.flagMode.update((on) => !on);
+  setFlagMode(on: boolean): void {
+    this.flagMode.set(on);
   }
 
   /** Normal click or tap. */
   primaryAction(row: number, col: number): void {
     if (this.flagMode()) {
       this.secondaryAction(row, col);
-    } else {
-      this.revealOrChord(row, col);
+    } else if (!this.board()[row][col].isRevealed) {
+      this.reveal(row, col);
+    } else if (this.settings.settings().chordOnClick) {
+      this.chord(row, col);
     }
   }
 
@@ -98,7 +102,10 @@ export class GameService {
     if (this.isOver() || this.board()[row][col].isFlagged) return;
 
     if (this.status() === 'ready') {
-      this.board.set(placeMines(this.board(), this.config().mines, row, col, this.random));
+      const { safeArea } = this.settings.settings();
+      this.board.set(
+        placeMines(this.board(), this.config().mines, row, col, this.random, safeArea),
+      );
       this.status.set('playing');
       this.startTimer();
     }

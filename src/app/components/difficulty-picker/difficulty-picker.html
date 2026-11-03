@@ -1,24 +1,19 @@
-<div class="levels" role="group" aria-label="Difficulty">
+<div class="segmented levels" role="group" aria-label="Difficulty">
   @for (preset of presets; track preset.id) {
     <button
       type="button"
-      [class.active]="game.difficulty() === preset.id"
       [attr.aria-pressed]="game.difficulty() === preset.id"
       (click)="game.setDifficulty(preset.id)"
     >
-      <strong>{{ preset.label }}</strong>
-      <small>{{ preset.cols }}×{{ preset.rows }}, {{ preset.mines }} mines</small>
-      <small>Best: {{ bestLabel(preset.id) }}</small>
+      {{ preset.label }}
     </button>
   }
   <button
     type="button"
-    [class.active]="game.difficulty() === 'custom'"
     [attr.aria-pressed]="game.difficulty() === 'custom'"
     (click)="game.setDifficulty('custom')"
   >
-    <strong>Custom</strong>
-    <small>Your own size</small>
+    Custom
   </button>
 </div>
 
@@ -31,29 +26,31 @@
     "
   >
     <label>
-      Columns
+      <span>Columns</span>
       <input
         #cols
         type="number"
+        inputmode="numeric"
         [min]="limits.minSize"
         [max]="limits.maxCols"
         [value]="game.config().cols"
       />
     </label>
     <label>
-      Rows
+      <span>Rows</span>
       <input
         #rows
         type="number"
+        inputmode="numeric"
         [min]="limits.minSize"
         [max]="limits.maxRows"
         [value]="game.config().rows"
       />
     </label>
     <label>
-      Mines
-      <input #mines type="number" min="1" [value]="game.config().mines" />
+      <span>Mines</span>
+      <input #mines type="number" inputmode="numeric" min="1" [value]="game.config().mines" />
     </label>
-    <button type="submit">Start</button>
+    <button type="submit" class="button">Start</button>
   </form>
 }

@@ -1,0 +1,31 @@
+<h2 id="controls-title">Controls</h2>
+<dl aria-labelledby="controls-title">
+  <div>
+    <dt>Reveal</dt>
+    <dd>Click or tap a cell</dd>
+  </div>
+  <div>
+    <dt>Flag</dt>
+    <dd>
+      Switch to Flag and click, press <kbd>{{ keys().flag }}</kbd> while pointing,
+      <kbd>Shift</kbd> + click, right-click or two-finger click, or long press on touch
+    </dd>
+  </div>
+  <div>
+    <dt>Chord</dt>
+    <dd>
+      {{ chordOnClick() ? 'Click, double-click' : 'Double-click' }} or <kbd>Shift</kbd> + click a
+      number whose flags are placed, or press <kbd>{{ keys().reveal }}</kbd> while pointing at it
+    </dd>
+  </div>
+  <div>
+    <dt>Keyboard</dt>
+    <dd>
+      <kbd>Tab</kbd> into the board, arrow keys to move, <kbd>Enter</kbd> or
+      <kbd>{{ keys().reveal }}</kbd> to reveal, <kbd>{{ keys().flag }}</kbd> to flag,
+      <kbd>{{ keys().flagMode }}</kbd> to switch Reveal / Flag, <kbd>{{ keys().newGame }}</kbd> for
+      a new game
+    </dd>
+  </div>
+</dl>
+<p class="more">Change keys and gameplay options in Settings.</p>

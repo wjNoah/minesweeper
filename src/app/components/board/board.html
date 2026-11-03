@@ -1,12 +1,15 @@
 <div class="scroll">
   <div
     class="board"
+    [attr.data-status]="game.status()"
     role="group"
     [attr.aria-label]="
       'Minefield, ' + game.config().rows + ' rows by ' + game.config().cols + ' columns'
     "
     (contextmenu)="$event.preventDefault()"
     (pointerleave)="onPointerLeave()"
+    (focusin)="onFocusChange()"
+    (focusout)="onFocusChange()"
   >
     @for (line of game.board(); track $index) {
       <div class="row">
@@ -15,6 +18,8 @@
             [cell]="cell"
             [lost]="game.status() === 'lost'"
             [focusable]="isCursor(cell.row, cell.col)"
+            [highlighted]="isHighlighted(cell.row, cell.col)"
+            [haptics]="settings.settings().haptics"
             (primary)="onPrimary(cell.row, cell.col)"
             (secondary)="game.secondaryAction(cell.row, cell.col)"
             (chord)="game.chord(cell.row, cell.col)"

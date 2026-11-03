@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { BestTimesService } from '../../services/best-times.service';
 import { GameService } from '../../services/game.service';
-
-const FACES = { ready: '🙂', playing: '🙂', won: '😎', lost: '😵' } as const;
 
 @Component({
   selector: 'app-game-header',
@@ -11,10 +10,22 @@ const FACES = { ready: '🙂', playing: '🙂', won: '😎', lost: '😵' } as c
 })
 export class GameHeader {
   protected readonly game = inject(GameService);
-  protected readonly face = computed(() => FACES[this.game.status()]);
+  private readonly bestTimes = inject(BestTimesService);
 
-  protected pad(value: number): string {
-    const clamped = Math.max(-99, Math.min(999, value));
-    return clamped < 0 ? '-' + String(-clamped).padStart(2, '0') : String(clamped).padStart(3, '0');
+  /** Best time for the current difficulty. Custom boards have none. */
+  protected readonly bestLabel = computed(() => {
+    const difficulty = this.game.difficulty();
+    const best = difficulty === 'custom' ? undefined : this.bestTimes.times()[difficulty];
+    return best === undefined ? '–' : this.formatTime(best);
+  });
+
+  protected readonly boardSize = computed(() => {
+    const { rows, cols, mines } = this.game.config();
+    return `${cols} × ${rows} board, ${mines} mines`;
+  });
+
+  protected formatTime(seconds: number): string {
+    const minutes = Math.floor(seconds / 60);
+    return `${minutes}:${String(seconds % 60).padStart(2, '0')}`;
   }
 }

@@ -37,9 +37,9 @@ export function getNeighbors(grid: Grid, row: number, col: number): CellState[] 
 
 /**
  * Places mines after the first click so that click is always safe.
- * The clicked cell and its neighbors are kept free, so the first click
- * opens an area. If the grid is too full for that (custom sizes), only
- * the clicked cell itself is kept free.
+ * With safeArea, the clicked cell and its neighbors are kept free, so the
+ * first click opens an area. If the grid is too full for that (custom
+ * sizes), or safeArea is off, only the clicked cell itself is kept free.
  */
 export function placeMines(
   grid: Grid,
@@ -47,6 +47,7 @@ export function placeMines(
   safeRow: number,
   safeCol: number,
   random: RandomFn = Math.random,
+  safeArea = true,
 ): Grid {
   const rows = grid.length;
   const cols = grid[0].length;
@@ -56,7 +57,7 @@ export function placeMines(
 
   const allCells = grid.flat();
   let candidates = allCells.filter((cell) => !isNearSafeCell(cell.row, cell.col));
-  if (candidates.length < mineCount) {
+  if (!safeArea || candidates.length < mineCount) {
     candidates = allCells.filter((cell) => !isSafeCell(cell.row, cell.col));
   }
   if (candidates.length < mineCount) {

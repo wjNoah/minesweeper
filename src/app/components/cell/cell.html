@@ -3,6 +3,7 @@
   class="cell"
   [class]="view()"
   [class.pressing]="pressing()"
+  [class.highlight]="highlighted()"
   [attr.data-row]="cell().row"
   [attr.data-col]="cell().col"
   [attr.data-count]="view() === 'number' ? cell().adjacentMines : null"
@@ -18,5 +19,39 @@
   (pointerleave)="cancelPress()"
   (pointerenter)="hovered.emit()"
 >
-  <span aria-hidden="true">{{ symbol() }}</span>
+  @switch (view()) {
+    @case ('number') {
+      <span aria-hidden="true">{{ cell().adjacentMines }}</span>
+    }
+    @case ('flagged') {
+      <ng-container [ngTemplateOutlet]="flagIcon" />
+    }
+    @case ('wrong-flag') {
+      <ng-container [ngTemplateOutlet]="flagIcon" />
+      <svg class="icon cross" viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M3 3l10 10M13 3L3 13" />
+      </svg>
+    }
+    @case ('mine') {
+      <ng-container [ngTemplateOutlet]="mineIcon" />
+    }
+    @case ('exploded') {
+      <ng-container [ngTemplateOutlet]="mineIcon" />
+    }
+  }
 </button>
+
+<ng-template #flagIcon>
+  <svg class="icon flag" viewBox="0 0 16 16" aria-hidden="true">
+    <path class="pole" d="M5 2.5v10.5M3 13.5h6" />
+    <path class="cloth" d="M5.6 2.6h7.2L10.6 5.5l2.2 2.9H5.6z" />
+  </svg>
+</ng-template>
+
+<ng-template #mineIcon>
+  <svg class="icon mine" viewBox="0 0 16 16" aria-hidden="true">
+    <path class="spikes" d="M8 1.75v12.5M1.75 8h12.5M3.6 3.6l8.8 8.8M12.4 3.6l-8.8 8.8" />
+    <circle cx="8" cy="8" r="4.1" />
+    <circle class="shine" cx="6.6" cy="6.6" r="1.1" />
+  </svg>
+</ng-template>
