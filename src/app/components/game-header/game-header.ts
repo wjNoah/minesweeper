@@ -12,16 +12,17 @@ export class GameHeader {
   protected readonly game = inject(GameService);
   private readonly bestTimes = inject(BestTimesService);
 
-  /** Best time for the current difficulty. Custom boards have none. */
+  /** Best time for the current difficulty and mode. Custom boards have none. */
   protected readonly bestLabel = computed(() => {
-    const difficulty = this.game.difficulty();
-    const best = difficulty === 'custom' ? undefined : this.bestTimes.times()[difficulty];
+    const key = this.game.bestTimeKey();
+    const best = key ? this.bestTimes.times()[key] : undefined;
     return best === undefined ? '–' : this.formatTime(best);
   });
 
   protected readonly boardSize = computed(() => {
     const { rows, cols, mines } = this.game.config();
-    return `${cols} × ${rows} board, ${mines} mines`;
+    const mode = this.game.isNoGuess() ? ', no guessing' : '';
+    return `${cols} × ${rows} board, ${mines} mines${mode}`;
   });
 
   protected formatTime(seconds: number): string {

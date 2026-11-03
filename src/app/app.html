@@ -5,6 +5,15 @@
     <div class="tools">
       <button
         type="button"
+        class="icon-button text"
+        aria-label="Play 1v1 on the same network"
+        aria-haspopup="dialog"
+        (click)="matchDialog.open()"
+      >
+        1v1
+      </button>
+      <button
+        type="button"
         class="icon-button"
         [attr.aria-label]="
           settings.effectiveTheme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'
@@ -43,8 +52,10 @@
   </header>
 
   <app-game-header />
+  <app-match-bar (openRules)="matchDialog.open()" />
   <app-board />
   <app-controls-hint />
 </main>
 
 <app-settings-dialog #settingsDialog />
+<app-match-dialog #matchDialog />

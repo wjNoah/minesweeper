@@ -4,6 +4,7 @@
   [class]="view()"
   [class.pressing]="pressing()"
   [class.highlight]="highlighted()"
+  [attr.data-hint]="hint()"
   [attr.data-row]="cell().row"
   [attr.data-col]="cell().col"
   [attr.data-count]="view() === 'number' ? cell().adjacentMines : null"

@@ -1,3 +1,5 @@
+@use 'dialog';
+
 // Design tokens: warm paper and graphite ink, one blue for focus, red only for danger.
 // Every number color has at least 4.5:1 contrast on --tile-open, in both themes.
 @mixin dark-theme {
@@ -139,6 +141,14 @@ button {
       color: var(--ink);
     }
 
+    &:disabled {
+      cursor: default;
+
+      &:not([aria-pressed='true']) {
+        opacity: 0.55;
+      }
+    }
+
     &[aria-pressed='true'] {
       background: var(--surface);
       box-shadow:
@@ -160,9 +170,26 @@ button {
   font-weight: 600;
   transition: border-color 150ms ease;
 
-  &:hover {
+  &:hover:not(:disabled) {
     border-color: var(--ink-muted);
   }
+
+  &:disabled {
+    color: var(--ink-muted);
+    cursor: default;
+    opacity: 0.6;
+  }
+}
+
+.button.danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.button.primary {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
 }
 
 kbd {

@@ -55,6 +55,11 @@
     color: var(--danger);
     font-weight: 600;
   }
+
+  &.hinting {
+    color: var(--ink);
+    font-weight: 600;
+  }
 }
 
 @media (max-width: 600px) {
@@ -65,6 +70,10 @@
 
   .actions {
     width: 100%;
+
+    .button {
+      padding: 0 0.8rem;
+    }
 
     .segmented {
       flex: 1;

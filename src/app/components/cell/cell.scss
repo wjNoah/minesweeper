@@ -37,6 +37,26 @@
   box-shadow: inset 0 0 0 2px var(--ink-muted);
 }
 
+// Hint: a pulsing ring, green for "open this", red for "flag this" or "remove this flag".
+// The status message says the same in words. .cell raises specificity above :focus-visible.
+.cell[data-hint] {
+  z-index: 1;
+  outline: 3px solid var(--success);
+  outline-offset: 1px;
+  animation: hint-pulse 1.2s ease-in-out infinite;
+}
+
+.cell[data-hint='mine'],
+.cell[data-hint='wrong-flag'] {
+  outline-color: var(--danger);
+}
+
+@keyframes hint-pulse {
+  50% {
+    outline-offset: 3px;
+  }
+}
+
 .number,
 .empty,
 .exploded,

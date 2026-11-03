@@ -64,6 +64,13 @@ h1 {
     border-color: var(--ink-muted);
   }
 
+  &.text {
+    width: auto;
+    padding: 0 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
   svg {
     width: 20px;
     height: 20px;

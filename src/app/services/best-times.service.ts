@@ -1,7 +1,9 @@
 import { Injectable, signal } from '@angular/core';
 import { PRESETS, PresetId } from '../models/game.model';
 
-export type BestTimes = Partial<Record<PresetId, number>>;
+/** No-guess games have their own records, since they never end in a forced guess. */
+export type BestTimeKey = PresetId | `${PresetId}-ng`;
+export type BestTimes = Partial<Record<BestTimeKey, number>>;
 
 const STORAGE_KEY = 'minesweeper.bestTimes';
 
@@ -10,11 +12,11 @@ export class BestTimesService {
   readonly times = signal<BestTimes>(loadBestTimes());
 
   /** Saves the time if it beats the current best. Returns true for a new record. */
-  record(preset: PresetId, seconds: number): boolean {
-    const best = this.times()[preset];
+  record(key: BestTimeKey, seconds: number): boolean {
+    const best = this.times()[key];
     if (best !== undefined && best <= seconds) return false;
 
-    this.times.update((times) => ({ ...times, [preset]: seconds }));
+    this.times.update((times) => ({ ...times, [key]: seconds }));
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.times()));
     } catch {
@@ -40,9 +42,10 @@ function loadBestTimes(): BestTimes {
 
     const stored = parsed as Record<string, unknown>;
     const times: BestTimes = {};
-    for (const { id } of PRESETS) {
-      const value = stored[id];
-      if (typeof value === 'number' && value >= 0) times[id] = value;
+    const keys = PRESETS.flatMap(({ id }): BestTimeKey[] => [id, `${id}-ng`]);
+    for (const key of keys) {
+      const value = stored[key];
+      if (typeof value === 'number' && value >= 0) times[key] = value;
     }
     return times;
   } catch {

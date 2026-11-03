@@ -2,11 +2,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   ElementRef,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { getNeighbors } from '../../services/board-logic';
+import { HintKind } from '../../services/solver';
 import { GameService } from '../../services/game.service';
 import { SettingsService } from '../../services/settings.service';
 import { Cell } from '../cell/cell';
@@ -63,9 +66,26 @@ export class Board {
     return new Set(hidden.map((n) => `${n.row},${n.col}`));
   });
 
+  constructor() {
+    // Move the keyboard cursor to a new hint and scroll it into view (large boards on phones).
+    effect(() => {
+      const hint = this.game.hint();
+      if (!hint) return;
+      this.cursorPosition.set({ row: hint.row, col: hint.col });
+      const button = this.cellButton(hint.row, hint.col);
+      button?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      if (untracked(this.focusInBoard)) button?.focus();
+    });
+  }
+
   protected isCursor(row: number, col: number): boolean {
     const cursor = this.cursor();
     return cursor.row === row && cursor.col === col;
+  }
+
+  protected hintFor(row: number, col: number): HintKind | null {
+    const hint = this.game.hint();
+    return hint && hint.row === row && hint.col === col ? hint.kind : null;
   }
 
   protected isHighlighted(row: number, col: number): boolean {
@@ -106,8 +126,11 @@ export class Board {
 
     const active = this.hovered() ?? (focusInBoard ? this.cursor() : null);
 
-    if (key === keys.newGame) {
+    const inMatch = this.game.mode() === 'match';
+    if (key === keys.newGame && !inMatch) {
       this.game.newGame();
+    } else if (key === keys.hint && !inMatch) {
+      this.game.showHint();
     } else if (key === keys.flagMode) {
       this.game.setFlagMode(!this.game.flagMode());
     } else if (key === keys.flag && active) {
@@ -135,8 +158,12 @@ export class Board {
     this.cursorPosition.set(next);
     // Keyboard takes over from the mouse until the pointer enters another cell.
     this.hovered.set(null);
-    this.host.nativeElement
-      .querySelector<HTMLButtonElement>(`[data-row="${next.row}"][data-col="${next.col}"]`)
-      ?.focus();
+    this.cellButton(next.row, next.col)?.focus();
+  }
+
+  private cellButton(row: number, col: number): HTMLButtonElement | null {
+    return this.host.nativeElement.querySelector<HTMLButtonElement>(
+      `[data-row="${row}"][data-col="${col}"]`,
+    );
   }
 }

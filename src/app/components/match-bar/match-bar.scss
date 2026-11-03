@@ -1,0 +1,167 @@
+:host {
+  display: block;
+  width: min(100%, 42rem);
+}
+
+.bar {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.notice {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+
+  p {
+    margin: 0;
+    font-size: 0.9375rem;
+  }
+}
+
+.countdown {
+  margin: 0;
+  font-size: 1rem;
+  text-align: center;
+
+  strong {
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.result {
+  text-align: center;
+
+  p {
+    margin: 0;
+  }
+}
+
+.headline {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+
+  &[data-outcome='won'] {
+    color: var(--success);
+  }
+
+  &[data-outcome='lost'] {
+    color: var(--danger);
+  }
+}
+
+.detail {
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}
+
+.players {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.player {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr 3rem 7.5rem;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--track);
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ink);
+  transition: width 200ms ease;
+
+  &.opponent {
+    background: var(--focus);
+  }
+}
+
+.value {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.extra {
+  color: var(--ink-muted);
+}
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.rule {
+  color: var(--ink-muted);
+  font-size: 0.8125rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+// Phones: players side by side, so the board stays on screen during the race.
+@media (max-width: 600px) {
+  .bar {
+    gap: 0.6rem;
+    padding: 0.75rem 0.85rem;
+  }
+
+  .players {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .player {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'name value'
+      'track track'
+      'extra extra';
+    gap: 0.25rem 0.5rem;
+  }
+
+  .name {
+    grid-area: name;
+  }
+
+  .value {
+    grid-area: value;
+  }
+
+  .track {
+    grid-area: track;
+  }
+
+  .extra {
+    grid-area: extra;
+    font-size: 0.75rem;
+  }
+
+  .headline {
+    font-size: 1.25rem;
+  }
+}

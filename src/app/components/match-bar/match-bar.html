@@ -1,0 +1,88 @@
+@if (match.notice() && game.mode() === 'solo') {
+  <div class="bar notice" role="status">
+    <p>{{ match.notice() }}</p>
+    <button type="button" class="button" (click)="match.dismissNotice()">OK</button>
+  </div>
+} @else if (game.mode() === 'match') {
+  <div class="bar" aria-live="polite">
+    @switch (match.phase()) {
+      @case ('countdown') {
+        <p class="countdown">
+          Starting in <strong>{{ match.countdown() }}</strong>
+        </p>
+      }
+      @case ('finished') {
+        <div class="result">
+          <p class="headline" [attr.data-outcome]="match.outcome()">{{ headline() }}</p>
+          <p class="detail">
+            You: {{ describe(match.myFinish(), true) }} · Opponent:
+            {{ describe(match.opponentFinish(), false) }}
+          </p>
+        </div>
+      }
+    }
+
+    <div class="players">
+      <div class="player">
+        <span class="name">You</span>
+        <div
+          class="track"
+          role="progressbar"
+          aria-label="Your progress"
+          [attr.aria-valuenow]="myPercent()"
+          aria-valuemin="0"
+          aria-valuemax="100"
+        >
+          <span class="fill" [style.width.%]="myPercent()"></span>
+        </div>
+        <span class="value">{{ myPercent() }}%</span>
+        <span class="extra">{{ minesLabel(game.minesHit()) }}</span>
+      </div>
+      <div class="player">
+        <span class="name">Opponent</span>
+        <div
+          class="track"
+          role="progressbar"
+          aria-label="Opponent progress"
+          [attr.aria-valuenow]="opponentPercent()"
+          aria-valuemin="0"
+          aria-valuemax="100"
+        >
+          <span class="fill opponent" [style.width.%]="opponentPercent()"></span>
+        </div>
+        <span class="value">{{ opponentPercent() }}%</span>
+        <span class="extra">
+          @if (match.opponentFinish(); as finish) {
+            {{ describe(finish, false) }}
+          } @else {
+            {{ minesLabel(match.opponent().minesHit) }}
+          }
+        </span>
+      </div>
+    </div>
+
+    <div class="foot">
+      <span class="rule">{{ penaltyNote() }}</span>
+      <div class="actions">
+        @if (match.phase() === 'finished') {
+          @if (match.isHost()) {
+            <button type="button" class="button" (click)="openRules.emit()">Rules</button>
+            <button type="button" class="button primary" (click)="match.startRound()">
+              Play again
+            </button>
+          } @else {
+            <button
+              type="button"
+              class="button primary"
+              [disabled]="match.rematchRequested()"
+              (click)="match.startRound()"
+            >
+              {{ match.rematchRequested() ? 'Waiting for host…' : 'Ask for rematch' }}
+            </button>
+          }
+        }
+        <button type="button" class="button" (click)="match.leave()">Leave</button>
+      </div>
+    </div>
+  </div>
+}

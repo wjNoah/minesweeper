@@ -19,6 +19,7 @@
             [lost]="game.status() === 'lost'"
             [focusable]="isCursor(cell.row, cell.col)"
             [highlighted]="isHighlighted(cell.row, cell.col)"
+            [hint]="hintFor(cell.row, cell.col)"
             [haptics]="settings.settings().haptics"
             (primary)="onPrimary(cell.row, cell.col)"
             (secondary)="game.secondaryAction(cell.row, cell.col)"
