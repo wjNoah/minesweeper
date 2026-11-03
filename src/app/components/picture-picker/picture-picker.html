@@ -1,0 +1,25 @@
+@if (image(); as image) {
+  <img class="thumb" [src]="image" [alt]="'Current ' + label()" />
+} @else {
+  <span class="thumb empty">None</span>
+}
+<div class="actions">
+  <button type="button" class="button" [disabled]="busy()" (click)="fileInput.click()">
+    @if (busy()) {
+      Processing…
+    } @else {
+      {{ image() ? 'Change picture' : 'Choose picture' }}
+    }
+  </button>
+  @if (image()) {
+    <button type="button" class="button" (click)="removed.emit()">Remove</button>
+  }
+</div>
+<input
+  #fileInput
+  type="file"
+  accept="image/*"
+  hidden
+  [attr.aria-label]="'Choose ' + label()"
+  (change)="onChange($event)"
+/>

@@ -1,0 +1,85 @@
+.body {
+  padding-bottom: 1rem;
+}
+
+.theme-hint {
+  margin-bottom: 0.75rem;
+}
+
+.themes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+}
+
+.theme {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.5rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  transition: border-color 150ms ease;
+
+  &:hover {
+    border-color: var(--ink-muted);
+  }
+
+  // Thicker ring marks the chosen theme without relying on color.
+  &[aria-pressed='true'] {
+    border-color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--ink);
+  }
+}
+
+.preview {
+  display: grid;
+  grid-template-columns: repeat(4, 18px);
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--board-line);
+  border-radius: 6px;
+  background: var(--board-bg);
+}
+
+.tile {
+  display: grid;
+  place-items: center;
+  height: 18px;
+  border-radius: 3px;
+  background: var(--tile);
+  box-shadow: inset 0 -2px 0 var(--tile-edge);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+
+  &.open {
+    background: var(--tile-open);
+    box-shadow: inset 0 0 0 1px var(--board-line);
+  }
+
+  &.n1 {
+    color: var(--n1);
+  }
+
+  &.n2 {
+    color: var(--n2);
+  }
+}
+
+.name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.privacy {
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 600px) {
+  .themes {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

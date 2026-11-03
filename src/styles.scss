@@ -1,21 +1,17 @@
+@use 'dialog';
+// Page and board colors (--paper, --tile, --board-bg ...) come from the selected color theme.
+@use 'board-themes';
+
 // Design tokens: warm paper and graphite ink, one blue for focus, red only for danger.
-// Every number color has at least 4.5:1 contrast on --tile-open, in both themes.
+// Every number color has at least 4.5:1 contrast on --tile-open, in every board theme.
 @mixin dark-theme {
   color-scheme: dark;
-  --paper: #151513;
-  --surface: #1f1e1b;
   --ink: #ecebe6;
   --ink-muted: #a3a097;
-  --line: #2f2e2a;
-  --track: #262522;
   --focus: #7aa2ff;
   --danger: #e0574b;
   --success: #6cc68b;
 
-  --tile: #3a3934;
-  --tile-hover: #45443e;
-  --tile-edge: #2a2925;
-  --tile-open: #1b1a18;
   --flag: #ef6a5e;
 
   --n1: #86aaff;
@@ -36,20 +32,12 @@
   --radius: 10px;
   --font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 
-  --paper: #f5f3ee;
-  --surface: #ffffff;
   --ink: #1d1c1a;
   --ink-muted: #66645e;
-  --line: #e2dfd7;
-  --track: #e9e6df;
   --focus: #2f62d9;
   --danger: #c8372d;
   --success: #2c7a47;
 
-  --tile: #dedad1;
-  --tile-hover: #d3cec3;
-  --tile-edge: #bdb7aa;
-  --tile-open: #fbfaf7;
   --flag: #c8372d;
 
   --n1: #2a56c9;
@@ -89,6 +77,16 @@
 *::before,
 *::after {
   box-sizing: border-box;
+}
+
+// Background picture from the customize dialog. It sits on its own fixed layer instead of
+// background-attachment: fixed, which repaints on every scroll and breaks on iOS Safari.
+:root[data-page-image] body::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  background: var(--page-image) center / cover no-repeat;
+  content: '';
 }
 
 body {
@@ -139,6 +137,14 @@ button {
       color: var(--ink);
     }
 
+    &:disabled {
+      cursor: default;
+
+      &:not([aria-pressed='true']) {
+        opacity: 0.55;
+      }
+    }
+
     &[aria-pressed='true'] {
       background: var(--surface);
       box-shadow:
@@ -163,6 +169,17 @@ button {
   &:hover {
     border-color: var(--ink-muted);
   }
+}
+
+.button.danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.button.primary {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
 }
 
 kbd {

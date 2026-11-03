@@ -11,7 +11,7 @@
   padding: 0;
   border: 0;
   border-radius: 5px;
-  background: var(--tile);
+  background-color: var(--tile);
   // Raised edge: hidden and revealed cells differ by shape, not only by color.
   box-shadow: inset 0 -3px 0 var(--tile-edge);
   color: var(--ink);
@@ -21,7 +21,7 @@
   transition: background-color 120ms ease;
 
   &:hover {
-    background: var(--tile-hover);
+    background-color: var(--tile-hover);
   }
 
   &:focus-visible {
@@ -33,7 +33,7 @@
 
 // Hidden neighbors of the number being pointed at: one even ring on all four sides.
 .highlight {
-  background: var(--tile-hover);
+  background-color: var(--tile-hover);
   box-shadow: inset 0 0 0 2px var(--ink-muted);
 }
 
@@ -41,18 +41,18 @@
 .empty,
 .exploded,
 .wrong-flag {
-  background: var(--tile-open);
-  box-shadow: inset 0 0 0 1px var(--line);
+  background-color: var(--tile-open);
+  box-shadow: inset 0 0 0 1px var(--board-line);
 
   &:hover {
-    background: var(--tile-open);
+    background-color: var(--tile-open);
   }
 }
 
 .exploded {
   &,
   &:hover {
-    background: var(--danger);
+    background-color: var(--danger);
     box-shadow: none;
     color: #fff;
   }
@@ -123,5 +123,35 @@
 @for $n from 1 through 8 {
   [data-count='#{$n}'] {
     color: var(--n#{$n});
+  }
+}
+
+// Block picture from the customize dialog. Only hidden-looking blocks get it,
+// so numbers always sit on the plain opened color and stay readable.
+:host-context([data-tile-image]) {
+  .hidden,
+  .flagged,
+  .mine {
+    background-image: var(--tile-image);
+    background-position: center;
+    background-size: cover;
+
+    &:hover {
+      filter: brightness(1.08);
+    }
+  }
+}
+
+// "Whole board": every block shows its own piece of one big picture.
+// --row/--col come from the cell, --board-rows/--board-cols from the board.
+:host-context([data-tile-image='board']) {
+  .hidden,
+  .flagged,
+  .mine {
+    --cell-step: calc(var(--cell-size) + 3px);
+    background-position: calc(var(--col) * var(--cell-step) * -1)
+      calc(var(--row) * var(--cell-step) * -1);
+    background-size: calc(var(--board-cols) * var(--cell-step))
+      calc(var(--board-rows) * var(--cell-step));
   }
 }

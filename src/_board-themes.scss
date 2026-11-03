@@ -1,0 +1,199 @@
+@use 'sass:map';
+
+// Color themes for the page and the board, each in a light and a dark version.
+// Page: paper (background), surface (cards), line, track (segmented controls).
+// Board: tile, tile-hover, tile-edge, tile-open, board-bg, board-line.
+// Text and number colors stay the same; every theme keeps them at 4.5:1 contrast or more.
+// The selectors work on :root (the real board) and on any element with data-board-theme
+// (the previews in the customize dialog), so the colors live only here.
+$board-themes: (
+  classic: (
+    light: (
+      paper: #f5f3ee,
+      surface: #ffffff,
+      line: #e2dfd7,
+      track: #e9e6df,
+      tile: #dedad1,
+      tile-hover: #d3cec3,
+      tile-edge: #bdb7aa,
+      tile-open: #fbfaf7,
+      board-bg: #ffffff,
+      board-line: #e2dfd7,
+    ),
+    dark: (
+      paper: #151513,
+      surface: #1f1e1b,
+      line: #2f2e2a,
+      track: #262522,
+      tile: #3a3934,
+      tile-hover: #45443e,
+      tile-edge: #2a2925,
+      tile-open: #1b1a18,
+      board-bg: #1f1e1b,
+      board-line: #2f2e2a,
+    ),
+  ),
+  ocean: (
+    light: (
+      paper: #e8f0f6,
+      surface: #ffffff,
+      line: #cfdde8,
+      track: #d9e5ee,
+      tile: #c9dbe8,
+      tile-hover: #bacfdf,
+      tile-edge: #98b3c8,
+      tile-open: #f6fafd,
+      board-bg: #eef5fa,
+      board-line: #d3e2ec,
+    ),
+    dark: (
+      paper: #0f151b,
+      surface: #19212a,
+      line: #24313d,
+      track: #1c2731,
+      tile: #2d4152,
+      tile-hover: #374d60,
+      tile-edge: #1f2e3b,
+      tile-open: #141c23,
+      board-bg: #18222b,
+      board-line: #263542,
+    ),
+  ),
+  forest: (
+    light: (
+      paper: #ecf2e7,
+      surface: #ffffff,
+      line: #d3dfca,
+      track: #dde7d5,
+      tile: #cfdcc6,
+      tile-hover: #c1d1b6,
+      tile-edge: #a1b593,
+      tile-open: #f8fbf5,
+      board-bg: #f1f6ec,
+      board-line: #d6e2cd,
+    ),
+    dark: (
+      paper: #11160f,
+      surface: #1a2018,
+      line: #26311f,
+      track: #1d2619,
+      tile: #34442f,
+      tile-hover: #3e5038,
+      tile-edge: #243020,
+      tile-open: #151b13,
+      board-bg: #1a2218,
+      board-line: #29361f,
+    ),
+  ),
+  sunset: (
+    light: (
+      paper: #fbefe6,
+      surface: #ffffff,
+      line: #eed8c7,
+      track: #f3e0d1,
+      tile: #f0d3bd,
+      tile-hover: #e9c4a8,
+      tile-edge: #d4a07c,
+      tile-open: #fffaf6,
+      board-bg: #fff3ea,
+      board-line: #f0dccb,
+    ),
+    dark: (
+      paper: #18110d,
+      surface: #231a15,
+      line: #352720,
+      track: #2a1e18,
+      tile: #4d3529,
+      tile-hover: #5a3f31,
+      tile-edge: #33231b,
+      tile-open: #1d1511,
+      board-bg: #241a15,
+      board-line: #3a2a21,
+    ),
+  ),
+  lavender: (
+    light: (
+      paper: #f1edf9,
+      surface: #ffffff,
+      line: #ddd4ee,
+      track: #e5def3,
+      tile: #dcd3ee,
+      tile-hover: #d0c5e7,
+      tile-edge: #b0a2d0,
+      tile-open: #fbf9fe,
+      board-bg: #f5f1fc,
+      board-line: #e1d9f1,
+    ),
+    dark: (
+      paper: #131119,
+      surface: #1d1a26,
+      line: #2c273a,
+      track: #221e2d,
+      tile: #3c3550,
+      tile-hover: #473f5e,
+      tile-edge: #29243a,
+      tile-open: #17141f,
+      board-bg: #1d1927,
+      board-line: #2f2940,
+    ),
+  ),
+  slate: (
+    light: (
+      paper: #eef0f3,
+      surface: #ffffff,
+      line: #d9dee4,
+      track: #e1e5ea,
+      tile: #d3d8de,
+      tile-hover: #c6ccd4,
+      tile-edge: #a3abb6,
+      tile-open: #f9fafb,
+      board-bg: #ffffff,
+      board-line: #dde1e6,
+    ),
+    dark: (
+      paper: #121417,
+      surface: #1c1f24,
+      line: #2a2f36,
+      track: #1f2329,
+      tile: #353b44,
+      tile-hover: #404751,
+      tile-edge: #252a31,
+      tile-open: #15181c,
+      board-bg: #1b1f24,
+      board-line: #2a3038,
+    ),
+  ),
+);
+
+@mixin board-vars($vars) {
+  @each $name, $value in $vars {
+    --#{$name}: #{$value};
+  }
+}
+
+@each $name, $modes in $board-themes {
+  $own: "[data-board-theme='#{$name}']";
+  // Classic is also the default when no theme is set.
+  $root-light: $own;
+  $root-dark: ':root#{$own}';
+  @if $name == classic {
+    $root-light: ':root, #{$own}';
+    $root-dark: ':root';
+  }
+
+  #{$root-light} {
+    @include board-vars(map.get($modes, light));
+  }
+
+  @media (prefers-color-scheme: dark) {
+    #{$root-dark}:not([data-theme='light']),
+    :root:not([data-theme='light']) #{$own} {
+      @include board-vars(map.get($modes, dark));
+    }
+  }
+
+  #{$root-dark}[data-theme='dark'],
+  :root[data-theme='dark'] #{$own} {
+    @include board-vars(map.get($modes, dark));
+  }
+}
