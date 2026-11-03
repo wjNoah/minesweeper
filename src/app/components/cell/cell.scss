@@ -1,13 +1,74 @@
-.cell {
-  width: 32px;
-  height: 32px;
-  border: 1px solid #888;
-  background: #ccc;
-  padding: 0;
-  font-weight: bold;
-  font-size: 1rem;
+:host {
+  display: block;
 }
 
-.revealed {
-  background: #eee;
+.cell {
+  display: grid;
+  place-items: center;
+  width: var(--cell-size);
+  height: var(--cell-size);
+  padding: 0;
+  border: 1px solid var(--cell-border);
+  border-radius: 3px;
+  background: var(--cell-hidden);
+  // Raised look so hidden and revealed cells differ by shape, not only by color.
+  box-shadow:
+    inset 2px 2px 0 var(--cell-highlight),
+    inset -2px -2px 0 var(--cell-shadow);
+  color: var(--text);
+  font:
+    700 calc(var(--cell-size) * 0.55) / 1 system-ui,
+    sans-serif;
+  cursor: pointer;
+  -webkit-touch-callout: none;
+
+  &:hover {
+    background: var(--cell-hover);
+  }
+
+  &:focus-visible {
+    position: relative;
+    z-index: 1;
+    outline: 3px solid var(--focus);
+    outline-offset: -1px;
+  }
+}
+
+.number,
+.empty,
+.exploded {
+  background: var(--cell-revealed);
+  box-shadow: none;
+
+  &:hover {
+    background: var(--cell-revealed);
+  }
+}
+
+.exploded {
+  &,
+  &:hover {
+    background: var(--danger);
+  }
+}
+
+.wrong-flag {
+  background: var(--cell-revealed);
+}
+
+.pressing {
+  animation: press 400ms ease-out forwards;
+}
+
+@keyframes press {
+  to {
+    transform: scale(0.85);
+    box-shadow: 0 0 0 3px var(--focus);
+  }
+}
+
+@for $n from 1 through 8 {
+  [data-count='#{$n}'] {
+    color: var(--n#{$n});
+  }
 }

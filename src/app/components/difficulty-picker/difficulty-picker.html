@@ -1,0 +1,59 @@
+<div class="levels" role="group" aria-label="Difficulty">
+  @for (preset of presets; track preset.id) {
+    <button
+      type="button"
+      [class.active]="game.difficulty() === preset.id"
+      [attr.aria-pressed]="game.difficulty() === preset.id"
+      (click)="game.setDifficulty(preset.id)"
+    >
+      <strong>{{ preset.label }}</strong>
+      <small>{{ preset.cols }}×{{ preset.rows }}, {{ preset.mines }} mines</small>
+      <small>Best: {{ bestLabel(preset.id) }}</small>
+    </button>
+  }
+  <button
+    type="button"
+    [class.active]="game.difficulty() === 'custom'"
+    [attr.aria-pressed]="game.difficulty() === 'custom'"
+    (click)="game.setDifficulty('custom')"
+  >
+    <strong>Custom</strong>
+    <small>Your own size</small>
+  </button>
+</div>
+
+@if (game.difficulty() === 'custom') {
+  <form
+    class="custom"
+    (submit)="
+      $event.preventDefault();
+      applyCustom(rows.valueAsNumber, cols.valueAsNumber, mines.valueAsNumber)
+    "
+  >
+    <label>
+      Columns
+      <input
+        #cols
+        type="number"
+        [min]="limits.minSize"
+        [max]="limits.maxCols"
+        [value]="game.config().cols"
+      />
+    </label>
+    <label>
+      Rows
+      <input
+        #rows
+        type="number"
+        [min]="limits.minSize"
+        [max]="limits.maxRows"
+        [value]="game.config().rows"
+      />
+    </label>
+    <label>
+      Mines
+      <input #mines type="number" min="1" [value]="game.config().mines" />
+    </label>
+    <button type="submit">Start</button>
+  </form>
+}

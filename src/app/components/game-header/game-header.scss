@@ -1,0 +1,49 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.counter {
+  min-width: 5.5rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  background: var(--counter-bg);
+  color: var(--counter-text);
+  font:
+    700 1.25rem / 1 ui-monospace,
+    monospace;
+  text-align: center;
+}
+
+.restart {
+  width: 48px;
+  height: 48px;
+  font-size: 1.75rem;
+}
+
+.flag-mode {
+  min-height: 44px;
+  padding: 0 1rem;
+
+  &.active {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--accent-text);
+    // Thicker border so the state is visible without relying on color.
+    box-shadow: inset 0 0 0 2px var(--accent-text);
+  }
+}
+
+.message {
+  min-height: 1.5em;
+  margin: 0;
+  text-align: center;
+}

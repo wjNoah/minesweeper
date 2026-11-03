@@ -1,7 +1,27 @@
+:host {
+  display: block;
+  max-width: 100%;
+}
+
+// Large boards (expert) scroll sideways on narrow screens instead of shrinking the cells.
+.scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 .board {
-  display: inline-block;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--board-bg);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .row {
   display: flex;
+  gap: 2px;
 }

@@ -48,13 +48,13 @@ Also:
 
 - Signals for state, OnPush change detection, and the new control flow (`@if`, `@for` with `track`).
 - Strict TypeScript, no `any`. Pure functions for board logic so they're easy to unit test.
-- Unit tests (Jasmine/Karma as in the project) for: mine placement, first-click safety, adjacent counts, flood fill, flagging, chording, win and lose.
+- Unit tests (Vitest, as set up in the project; run with `npm test`) for: mine placement, first-click safety, adjacent counts, flood fill, flagging, chording, win and lose.
 - Accessibility: buttons for cells, aria-labels (for example "row 3, column 5, flagged"), good color contrast, number colors that don't rely on color alone.
 - Responsive layout that is playable at laptop size and on a phone. Support a dark mode through CSS variables.
 
 ## Style and process
 
-- Small commits with clear messages, one per feature step.
+- Never commit. The user reviews all changes and commits them personally.
 - Short comments only where the logic isn't obvious (flood fill, first-click safety).
 - Don't add libraries unless I ask. Plain Angular and SCSS only.
 - At the end of each step, tell me what changed and how to try it manually.

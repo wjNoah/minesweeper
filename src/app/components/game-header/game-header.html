@@ -1,0 +1,42 @@
+<div class="header">
+  <div class="counter" role="status">
+    <span aria-hidden="true">💣 {{ pad(game.minesLeft()) }}</span>
+    <span class="sr-only">{{ game.minesLeft() }} mines left</span>
+  </div>
+
+  <button type="button" class="restart" aria-label="Restart game (R)" (click)="game.newGame()">
+    <span aria-hidden="true">{{ face() }}</span>
+  </button>
+
+  <div class="counter">
+    <span aria-hidden="true">⏱ {{ pad(game.elapsedSeconds()) }}</span>
+    <span class="sr-only">{{ game.elapsedSeconds() }} seconds</span>
+  </div>
+</div>
+
+<button
+  type="button"
+  class="flag-mode"
+  [class.active]="game.flagMode()"
+  [attr.aria-pressed]="game.flagMode()"
+  (click)="game.toggleFlagMode()"
+>
+  🚩 Flag mode: <strong>{{ game.flagMode() ? 'ON' : 'OFF' }}</strong>
+</button>
+
+<p class="message" aria-live="polite">
+  @switch (game.status()) {
+    @case ('won') {
+      You won in {{ game.elapsedSeconds() }} s!
+      @if (game.isNewBest()) {
+        <strong>New best time!</strong>
+      }
+    }
+    @case ('lost') {
+      Boom! You hit a mine. Press 🙂 or R to try again.
+    }
+    @case ('ready') {
+      Click any cell to start. The first click is always safe.
+    }
+  }
+</p>

@@ -1,9 +1,27 @@
-<div class="board">
-  @for (row of game.board(); track $index) {
-    <div class="row">
-      @for (cell of row; track cell.col) {
-        <app-cell [cell]="cell" (reveal)="game.reveal(cell.row, cell.col)" />
-      }
-    </div>
-  }
+<div class="scroll">
+  <div
+    class="board"
+    role="group"
+    [attr.aria-label]="
+      'Minefield, ' + game.config().rows + ' rows by ' + game.config().cols + ' columns'
+    "
+    (contextmenu)="$event.preventDefault()"
+    (pointerleave)="onPointerLeave()"
+  >
+    @for (line of game.board(); track $index) {
+      <div class="row">
+        @for (cell of line; track cell.col) {
+          <app-cell
+            [cell]="cell"
+            [lost]="game.status() === 'lost'"
+            [focusable]="isCursor(cell.row, cell.col)"
+            (primary)="onPrimary(cell.row, cell.col)"
+            (secondary)="game.secondaryAction(cell.row, cell.col)"
+            (chord)="game.chord(cell.row, cell.col)"
+            (hovered)="onHover(cell.row, cell.col)"
+          />
+        }
+      </div>
+    }
+  </div>
 </div>

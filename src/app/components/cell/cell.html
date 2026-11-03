@@ -1,11 +1,22 @@
 <button
-  class="cell"
   type="button"
-  [class.revealed]="cell().isRevealed"
+  class="cell"
+  [class]="view()"
+  [class.pressing]="pressing()"
+  [attr.data-row]="cell().row"
+  [attr.data-col]="cell().col"
+  [attr.data-count]="view() === 'number' ? cell().adjacentMines : null"
   [attr.aria-label]="label()"
-  (click)="reveal.emit()"
+  [tabIndex]="focusable() ? 0 : -1"
+  (click)="onClick($event)"
+  (dblclick)="chord.emit()"
+  (contextmenu)="onContextMenu($event)"
+  (pointerdown)="onPointerDown($event)"
+  (pointermove)="onPointerMove($event)"
+  (pointerup)="cancelPress()"
+  (pointercancel)="cancelPress()"
+  (pointerleave)="cancelPress()"
+  (pointerenter)="hovered.emit()"
 >
-  @if (cell().isRevealed && cell().adjacentMines > 0) {
-    {{ cell().adjacentMines }}
-  }
+  <span aria-hidden="true">{{ symbol() }}</span>
 </button>

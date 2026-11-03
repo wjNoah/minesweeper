@@ -1,1 +1,125 @@
-/* You can add global styles to this file, and also import other style files */
+// Theme colors. Every number color has at least 4.5:1 contrast on --cell-revealed.
+:root {
+  color-scheme: light dark;
+  --cell-size: 32px;
+
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --text: #1c1e21;
+  --text-muted: #4a4f57;
+  --border: #9aa0a8;
+  --accent: #1f5fbf;
+  --accent-text: #ffffff;
+  --focus: #e07b00;
+  --danger: #e04848;
+
+  --board-bg: #9aa0a8;
+  --cell-hidden: #c9ced6;
+  --cell-hover: #d8dce2;
+  --cell-revealed: #eef0f3;
+  --cell-border: #7d838c;
+  --cell-highlight: #eef0f3;
+  --cell-shadow: #8c929b;
+  --counter-bg: #1c1e21;
+  --counter-text: #ff5a4f;
+
+  --n1: #1748c4;
+  --n2: #1b6e1b;
+  --n3: #c21f1f;
+  --n4: #3b1f8f;
+  --n5: #8a2a0b;
+  --n6: #006b63;
+  --n7: #1c1e21;
+  --n8: #555b63;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #15171a;
+    --surface: #23262b;
+    --text: #e8eaed;
+    --text-muted: #b4b9c0;
+    --border: #5a606a;
+    --accent: #6ea8ff;
+    --accent-text: #0d1117;
+    --focus: #ffb347;
+    --danger: #c43c3c;
+
+    --board-bg: #3a3f47;
+    --cell-hidden: #4a505a;
+    --cell-hover: #575e69;
+    --cell-revealed: #262a30;
+    --cell-border: #1d2025;
+    --cell-highlight: #636a76;
+    --cell-shadow: #30343b;
+    --counter-bg: #0b0c0e;
+    --counter-text: #ff6b61;
+
+    --n1: #7fb2ff;
+    --n2: #7ad67a;
+    --n3: #ff8a80;
+    --n4: #c3a8ff;
+    --n5: #ffb07a;
+    --n6: #5fdccf;
+    --n7: #e8eaed;
+    --n8: #b4b9c0;
+  }
+}
+
+// Bigger cells for fingers on small screens: as large as fits 9 columns
+// (beginner) next to the page and board padding, between 32px and 40px.
+@media (max-width: 600px) {
+  :root {
+    --cell-size: clamp(32px, calc((100vw - 1rem - 32px) / 9), 40px);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, sans-serif;
+}
+
+button,
+input {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+kbd {
+  padding: 0 0.3em;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  font:
+    0.85em ui-monospace,
+    monospace;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

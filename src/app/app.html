@@ -1,4 +1,25 @@
 <main class="app">
   <h1>Minesweeper</h1>
+  <app-difficulty-picker />
+  <app-game-header />
   <app-board />
+
+  <section class="controls" aria-labelledby="controls-title">
+    <h2 id="controls-title">Controls</h2>
+    <ul>
+      <li><strong>Reveal:</strong> click or tap a cell.</li>
+      <li>
+        <strong>Flag:</strong> turn on Flag mode and click, press <kbd>F</kbd> while pointing at a
+        cell, <kbd>Shift</kbd>+click, right-click / two-finger click, or long press on touch.
+      </li>
+      <li>
+        <strong>Open neighbors (chord):</strong> click, double-click or <kbd>Shift</kbd>+click a
+        number whose flags are all placed, or press <kbd>Space</kbd> while pointing at it.
+      </li>
+      <li>
+        <strong>Keyboard:</strong> press <kbd>Tab</kbd> to enter the board, arrow keys move,
+        <kbd>Enter</kbd>/<kbd>Space</kbd> reveal, <kbd>F</kbd> flags, <kbd>R</kbd> restarts.
+      </li>
+    </ul>
+  </section>
 </main>
