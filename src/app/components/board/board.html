@@ -2,6 +2,8 @@
   <div
     class="board"
     [attr.data-status]="game.status()"
+    [style.--board-rows]="game.config().rows"
+    [style.--board-cols]="game.config().cols"
     role="group"
     [attr.aria-label]="
       'Minefield, ' + game.config().rows + ' rows by ' + game.config().cols + ' columns'

@@ -75,10 +75,34 @@ h1 {
   }
 }
 
+// With a background picture, the content sits on a panel so text stays readable.
+// No backdrop-filter blur: it made every board update re-blur the whole picture behind
+// the panel, which measured more than twice as slow.
+:host-context([data-page-image]) .app {
+  width: fit-content;
+  min-width: min(100% - 2rem, 46rem);
+  max-width: calc(100% - 2rem);
+  margin: 1.5rem auto;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--paper) 94%, transparent);
+  box-shadow: 0 24px 60px -30px rgb(0 0 0 / 0.45);
+}
+
 @media (max-width: 600px) {
   .app {
     gap: 1rem;
     padding: 1.5rem 0.75rem 3rem;
+  }
+
+  // Same total side space as without a picture, so the board still fits.
+  :host-context([data-page-image]) .app {
+    min-width: 0;
+    max-width: calc(100% - 1rem);
+    margin: 0.5rem auto;
+    // 1px less than 0.25rem to make room for the panel's border.
+    padding-inline: calc(0.25rem - 1px);
+    border-radius: 16px;
   }
 
   .top {

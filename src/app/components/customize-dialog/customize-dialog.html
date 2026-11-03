@@ -1,0 +1,88 @@
+<dialog #dialog class="dialog" aria-labelledby="customize-title" (click)="onDialogClick($event)">
+  <div class="panel">
+    <header class="head">
+      <h2 id="customize-title">Customize</h2>
+      <button type="button" class="icon-button" aria-label="Close" (click)="close()">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+      </button>
+    </header>
+
+    <div class="body">
+      <section aria-labelledby="themes-title">
+        <h3 id="themes-title">Theme</h3>
+        <p class="hint theme-hint">Colors for the board and the page.</p>
+        <div class="themes" role="group" aria-labelledby="themes-title">
+          @for (theme of themes; track theme.id) {
+            <button
+              type="button"
+              class="theme"
+              [attr.data-board-theme]="theme.id"
+              [attr.aria-pressed]="appearance.choices().boardTheme === theme.id"
+              (click)="appearance.setBoardTheme(theme.id)"
+            >
+              <!-- A tiny board in the theme's own colors (set by data-board-theme). -->
+              <span class="preview" aria-hidden="true">
+                <span class="tile"></span>
+                <span class="tile open n1">1</span>
+                <span class="tile open n2">2</span>
+                <span class="tile"></span>
+                <span class="tile open"></span>
+                <span class="tile open n1">1</span>
+                <span class="tile"></span>
+                <span class="tile"></span>
+              </span>
+              <span class="name">{{ theme.label }}</span>
+            </button>
+          }
+        </div>
+      </section>
+
+      <section aria-labelledby="page-picture-title">
+        <h3 id="page-picture-title">Background picture</h3>
+        <app-picture-picker
+          label="background picture"
+          [image]="appearance.pageImage()"
+          [busy]="busy() === 'page'"
+          (chosen)="onFileChosen($event, 'page')"
+          (removed)="appearance.removePageImage()"
+        />
+        <p class="hint">The game sits on a see-through panel, so text stays readable.</p>
+      </section>
+
+      <section aria-labelledby="tile-picture-title">
+        <h3 id="tile-picture-title">Block picture</h3>
+        <app-picture-picker
+          label="block picture"
+          [image]="appearance.tileImage()"
+          [busy]="busy() === 'tile'"
+          (chosen)="onFileChosen($event, 'tile')"
+          (removed)="appearance.removeTileImage()"
+        />
+        @if (appearance.tileImage()) {
+          <div class="row choice">
+            <span class="label" id="tile-mode-label">Show the picture on</span>
+            <div class="segmented" role="group" aria-labelledby="tile-mode-label">
+              @for (mode of tileModes; track mode.value) {
+                <button
+                  type="button"
+                  [attr.aria-pressed]="appearance.choices().tileImageMode === mode.value"
+                  (click)="appearance.setTileImageMode(mode.value)"
+                >
+                  {{ mode.label }}
+                </button>
+              }
+            </div>
+          </div>
+        }
+        <p class="hint">Only hidden blocks show it. Opened cells keep the theme color.</p>
+      </section>
+
+      <p class="error" aria-live="polite">{{ error() }}</p>
+      <p class="hint privacy">Pictures are saved only in this browser and never uploaded.</p>
+    </div>
+
+    <footer class="foot">
+      <button type="button" class="button primary" (click)="close()">Done</button>
+    </footer>
+  </div>
+</dialog>
