@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { GameService } from '../../services/game.service';
 import { Cell } from '../cell/cell';
 
@@ -7,6 +7,7 @@ import { Cell } from '../cell/cell';
   imports: [Cell],
   templateUrl: './board.html',
   styleUrl: './board.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Board {
   protected readonly game = inject(GameService);

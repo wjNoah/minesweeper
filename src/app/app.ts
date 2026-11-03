@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { Board } from './components/board/board';
 
 @Component({
@@ -6,5 +6,6 @@ import { Board } from './components/board/board';
   imports: [Board],
   templateUrl: './app.html',
   styleUrl: './app.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class App {}

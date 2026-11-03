@@ -1,1 +1,11 @@
-<button class="cell" type="button"></button>
+<button
+  class="cell"
+  type="button"
+  [class.revealed]="cell().isRevealed"
+  [attr.aria-label]="label()"
+  (click)="reveal.emit()"
+>
+  @if (cell().isRevealed && cell().adjacentMines > 0) {
+    {{ cell().adjacentMines }}
+  }
+</button>
