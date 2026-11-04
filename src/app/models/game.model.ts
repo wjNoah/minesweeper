@@ -1,5 +1,8 @@
-/** 'ready' means no cell has been revealed yet, so no mines are placed. */
-export type GameStatus = 'ready' | 'playing' | 'won' | 'lost';
+/**
+ * 'ready' means no cell has been revealed yet, so no mines are placed.
+ * 'stopped' ends a 1v1 round early because the result was already decided.
+ */
+export type GameStatus = 'ready' | 'playing' | 'won' | 'lost' | 'stopped';
 
 export type PresetId = 'beginner' | 'intermediate' | 'expert';
 export type DifficultyId = PresetId | 'custom';

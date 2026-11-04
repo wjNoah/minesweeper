@@ -2,6 +2,7 @@ import { effect, Injectable, signal } from '@angular/core';
 import {
   AppearanceChoices,
   BoardThemeId,
+  DEFAULT_APPEARANCE,
   parseAppearance,
   TileImageMode,
 } from '../models/appearance.model';
@@ -10,6 +11,11 @@ import { ImageError, resizeImage } from './image-resize';
 export const APPEARANCE_KEY = 'minesweeper.appearance';
 export const PAGE_IMAGE_KEY = 'minesweeper.pageImage';
 export const TILE_IMAGE_KEY = 'minesweeper.tileImage';
+export const FLAG_IMAGE_KEY = 'minesweeper.flagImage';
+export const MINE_IMAGE_KEY = 'minesweeper.mineImage';
+
+/** Flag and mine pictures are small icons, so a modest size is plenty. */
+const ICON_MAX_SIDE = 160;
 
 /** Board theme and the user's own pictures. Everything stays in this browser. */
 @Injectable({ providedIn: 'root' })
@@ -17,6 +23,8 @@ export class AppearanceService {
   readonly choices = signal<AppearanceChoices>(parseAppearance(readJson(APPEARANCE_KEY)));
   readonly pageImage = signal<string | null>(read(PAGE_IMAGE_KEY));
   readonly tileImage = signal<string | null>(read(TILE_IMAGE_KEY));
+  readonly flagImage = signal<string | null>(read(FLAG_IMAGE_KEY));
+  readonly mineImage = signal<string | null>(read(MINE_IMAGE_KEY));
 
   constructor() {
     effect(() => {
@@ -25,6 +33,8 @@ export class AppearanceService {
       root.dataset['boardTheme'] = boardTheme;
       setImage(root, '--page-image', 'pageImage', this.pageImage(), 'on');
       setImage(root, '--tile-image', 'tileImage', this.tileImage(), tileImageMode);
+      setImage(root, '--flag-image', 'flagImage', this.flagImage(), 'on');
+      setImage(root, '--mine-image', 'mineImage', this.mineImage(), 'on');
     });
   }
 
@@ -50,6 +60,29 @@ export class AppearanceService {
     this.tileImage.set(image);
   }
 
+  /** Flag and mine: small, and transparent pictures stay transparent. */
+  async setFlagImage(file: File): Promise<void> {
+    const image = await resizeImage(file, ICON_MAX_SIDE, true);
+    save(FLAG_IMAGE_KEY, image);
+    this.flagImage.set(image);
+  }
+
+  async setMineImage(file: File): Promise<void> {
+    const image = await resizeImage(file, ICON_MAX_SIDE, true);
+    save(MINE_IMAGE_KEY, image);
+    this.mineImage.set(image);
+  }
+
+  removeFlagImage(): void {
+    localStorage.removeItem(FLAG_IMAGE_KEY);
+    this.flagImage.set(null);
+  }
+
+  removeMineImage(): void {
+    localStorage.removeItem(MINE_IMAGE_KEY);
+    this.mineImage.set(null);
+  }
+
   removePageImage(): void {
     localStorage.removeItem(PAGE_IMAGE_KEY);
     this.pageImage.set(null);
@@ -58,6 +91,16 @@ export class AppearanceService {
   removeTileImage(): void {
     localStorage.removeItem(TILE_IMAGE_KEY);
     this.tileImage.set(null);
+  }
+
+  /** Back to the default theme and removes all pictures. */
+  reset(): void {
+    localStorage.removeItem(APPEARANCE_KEY);
+    this.choices.set({ ...DEFAULT_APPEARANCE });
+    this.removePageImage();
+    this.removeTileImage();
+    this.removeFlagImage();
+    this.removeMineImage();
   }
 
   private updateChoices(changes: Partial<AppearanceChoices>): void {

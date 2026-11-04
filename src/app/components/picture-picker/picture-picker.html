@@ -1,7 +1,7 @@
 @if (image(); as image) {
-  <img class="thumb" [src]="image" [alt]="'Current ' + label()" />
+  <img class="thumb" [class.contain]="contain()" [src]="image" [alt]="'Current ' + label()" />
 } @else {
-  <span class="thumb empty">None</span>
+  <span class="thumb empty" [class.contain]="contain()">{{ emptyLabel() }}</span>
 }
 <div class="actions">
   <button type="button" class="button" [disabled]="busy()" (click)="fileInput.click()">

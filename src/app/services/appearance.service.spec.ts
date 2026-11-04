@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import {
   APPEARANCE_KEY,
   AppearanceService,
+  FLAG_IMAGE_KEY,
+  MINE_IMAGE_KEY,
   PAGE_IMAGE_KEY,
   TILE_IMAGE_KEY,
 } from './appearance.service';
@@ -16,8 +18,11 @@ describe('AppearanceService', () => {
     delete root.dataset['boardTheme'];
     delete root.dataset['pageImage'];
     delete root.dataset['tileImage'];
-    root.style.removeProperty('--page-image');
-    root.style.removeProperty('--tile-image');
+    delete root.dataset['flagImage'];
+    delete root.dataset['mineImage'];
+    for (const name of ['--page-image', '--tile-image', '--flag-image', '--mine-image']) {
+      root.style.removeProperty(name);
+    }
   });
 
   it('applies and saves the board theme', () => {
@@ -61,5 +66,55 @@ describe('AppearanceService', () => {
     const file = new File(['hello'], 'notes.txt', { type: 'text/plain' });
     await expect(service.setPageImage(file)).rejects.toBeInstanceOf(ImageError);
     expect(service.pageImage()).toBeNull();
+  });
+
+  it('applies stored flag and mine pictures as CSS variables', () => {
+    localStorage.setItem(FLAG_IMAGE_KEY, TINY_IMAGE);
+    localStorage.setItem(MINE_IMAGE_KEY, TINY_IMAGE);
+    TestBed.inject(AppearanceService);
+    TestBed.tick();
+
+    expect(root.style.getPropertyValue('--flag-image')).toContain(TINY_IMAGE);
+    expect(root.style.getPropertyValue('--mine-image')).toContain(TINY_IMAGE);
+    expect(root.dataset['flagImage']).toBe('on');
+  });
+
+  it('removes the flag and mine pictures from the page and from storage', () => {
+    localStorage.setItem(FLAG_IMAGE_KEY, TINY_IMAGE);
+    localStorage.setItem(MINE_IMAGE_KEY, TINY_IMAGE);
+    const service = TestBed.inject(AppearanceService);
+    service.removeFlagImage();
+    service.removeMineImage();
+    TestBed.tick();
+
+    expect(service.flagImage()).toBeNull();
+    expect(localStorage.getItem(FLAG_IMAGE_KEY)).toBeNull();
+    expect(localStorage.getItem(MINE_IMAGE_KEY)).toBeNull();
+    expect(root.style.getPropertyValue('--flag-image')).toBe('');
+  });
+
+  it('rejects a flag file that is not an image', async () => {
+    const service = TestBed.inject(AppearanceService);
+    const file = new File(['hello'], 'notes.txt', { type: 'text/plain' });
+    await expect(service.setFlagImage(file)).rejects.toBeInstanceOf(ImageError);
+    expect(service.flagImage()).toBeNull();
+  });
+
+  it('reset restores the default theme and removes every picture', () => {
+    for (const key of [PAGE_IMAGE_KEY, TILE_IMAGE_KEY, FLAG_IMAGE_KEY, MINE_IMAGE_KEY]) {
+      localStorage.setItem(key, TINY_IMAGE);
+    }
+    localStorage.setItem(APPEARANCE_KEY, JSON.stringify({ boardTheme: 'forest' }));
+    const service = TestBed.inject(AppearanceService);
+    service.reset();
+    TestBed.tick();
+
+    expect(service.choices().boardTheme).toBe('classic');
+    expect(service.pageImage()).toBeNull();
+    expect(service.mineImage()).toBeNull();
+    expect(localStorage.getItem(APPEARANCE_KEY)).toBeNull();
+    expect(localStorage.getItem(TILE_IMAGE_KEY)).toBeNull();
+    expect(root.dataset['boardTheme']).toBe('classic');
+    expect(root.dataset['pageImage']).toBeUndefined();
   });
 });

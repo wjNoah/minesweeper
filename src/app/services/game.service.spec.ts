@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { countMines, getNeighbors } from './board-logic';
+import { countMines, createEmptyBoard, getNeighbors, placeMines } from './board-logic';
+import { isSolvableWithoutGuessing } from './solver';
 import { GameService } from './game.service';
 import { SettingsService } from './settings.service';
 
@@ -92,6 +93,113 @@ describe('GameService', () => {
     it('secondary action flags hidden cells', () => {
       game.secondaryAction(0, 0);
       expect(game.board()[0][0].isFlagged).toBe(true);
+    });
+  });
+
+  describe('1v1 rounds', () => {
+    function startRound(rule: 'defeat' | 'penalty'): void {
+      game.prepareMatch('beginner', rule, 10);
+      const minefield = placeMines(createEmptyBoard(9, 9), 10, 4, 4, Math.random);
+      game.startMatchRound(minefield, { row: 4, col: 4 });
+    }
+
+    it('blocks input until the round starts', () => {
+      game.prepareMatch('beginner', 'defeat', 10);
+      game.reveal(0, 0);
+      expect(game.status()).toBe('ready');
+      expect(
+        game
+          .board()
+          .flat()
+          .some((c) => c.isRevealed),
+      ).toBe(false);
+    });
+
+    it('starts with the shared opening already revealed', () => {
+      startRound('defeat');
+      expect(game.status()).toBe('playing');
+      expect(game.board()[4][4].isRevealed).toBe(true);
+    });
+
+    it('with the penalty rule, a mine is flagged and adds seconds instead of ending the game', () => {
+      startRound('penalty');
+      vi.advanceTimersByTime(3000);
+      const mine = find((hasMine) => hasMine);
+      game.reveal(mine.row, mine.col);
+
+      expect(game.status()).toBe('playing');
+      expect(game.minesHit()).toBe(1);
+      expect(game.board()[mine.row][mine.col].isFlagged).toBe(true);
+      expect(game.displaySeconds()).toBe(13);
+      expect(game.totalMs()).toBe(13_000);
+    });
+
+    it('with the defeat rule, a mine ends the game', () => {
+      startRound('defeat');
+      const mine = find((hasMine) => hasMine);
+      game.reveal(mine.row, mine.col);
+      expect(game.status()).toBe('lost');
+    });
+
+    it('does not record best times or give hints in a match', () => {
+      startRound('defeat');
+      game.showHint();
+      expect(game.hint()).toBeNull();
+      revealAllSafeCells();
+      expect(game.status()).toBe('won');
+      expect(localStorage.getItem('minesweeper.bestTimes')).toBeNull();
+    });
+  });
+
+  describe('hints', () => {
+    it('does nothing before the first click', () => {
+      game.showHint();
+      expect(game.hint()).toBeNull();
+      expect(game.hintsUsed()).toBe(0);
+    });
+
+    it('shows a proven move and clears it after the next move', () => {
+      TestBed.inject(SettingsService).update({ noGuess: true });
+      game.reveal(4, 4);
+      game.showHint();
+
+      const hint = game.hint();
+      if (!hint) throw new Error('A no-guess board always has a hint');
+      const cell = game.board()[hint.row][hint.col];
+      expect(hint.kind === 'safe' ? !cell.hasMine : cell.hasMine).toBe(true);
+      expect(game.hintsUsed()).toBe(1);
+
+      game.toggleFlag(hint.row, hint.col);
+      expect(game.hint()).toBeNull();
+    });
+
+    it('does not count a game won with hints for best times', () => {
+      game.reveal(4, 4);
+      game.showHint();
+      revealAllSafeCells();
+      expect(game.status()).toBe('won');
+      expect(localStorage.getItem('minesweeper.bestTimes')).toBeNull();
+    });
+  });
+
+  describe('no guessing', () => {
+    beforeEach(() => TestBed.inject(SettingsService).update({ noGuess: true }));
+
+    it('deals a board that can be solved by logic alone', () => {
+      game.reveal(4, 4);
+      expect(game.isNoGuess()).toBe(true);
+      expect(game.noGuessFallback()).toBe(false);
+      expect(countMines(game.board())).toBe(10);
+      expect(isSolvableWithoutGuessing(game.board(), 4, 4)).toBe(true);
+    });
+
+    it('keeps its own best times', () => {
+      game.reveal(4, 4);
+      vi.advanceTimersByTime(30_000);
+      revealAllSafeCells();
+      expect(JSON.parse(localStorage.getItem('minesweeper.bestTimes') ?? '{}')).toEqual({
+        'beginner-ng': 30,
+      });
     });
   });
 

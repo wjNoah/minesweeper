@@ -1,0 +1,247 @@
+<dialog #dialog class="dialog" aria-labelledby="match-title" (click)="onDialogClick($event)">
+  <div class="panel">
+    <header class="head">
+      <h2 id="match-title">1v1 on the same network</h2>
+      <button type="button" class="icon-button" aria-label="Close" (click)="close()">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+      </button>
+    </header>
+
+    <div class="body" aria-live="polite">
+      @switch (connection.state()) {
+        @case ('waiting') {
+          @if (connection.role() === 'host') {
+            <ol class="steps">
+              <li>
+                <span class="label">Send this invite code to your opponent</span>
+                <textarea
+                  #invite
+                  class="code"
+                  readonly
+                  rows="4"
+                  aria-label="Invite code"
+                  [value]="connection.localCode()"
+                  (focus)="invite.select()"
+                ></textarea>
+                <div class="code-actions">
+                  <button
+                    type="button"
+                    class="button"
+                    (click)="copy(connection.localCode(), invite)"
+                  >
+                    {{ copied() ? 'Copied' : 'Copy' }}
+                  </button>
+                  @if (canShare) {
+                    <button type="button" class="button" (click)="share(connection.localCode())">
+                      Share
+                    </button>
+                  }
+                </div>
+              </li>
+              <li>
+                <span class="label">Paste the reply code you get back</span>
+                <textarea
+                  #reply
+                  class="code"
+                  rows="4"
+                  aria-label="Reply code"
+                  placeholder="MS1..."
+                ></textarea>
+                <div class="code-actions">
+                  <button type="button" class="button primary" (click)="acceptReply(reply.value)">
+                    Connect
+                  </button>
+                </div>
+              </li>
+            </ol>
+          } @else {
+            <ol class="steps" start="2">
+              <li>
+                <span class="label">Send this reply code back to the host</span>
+                <textarea
+                  #replyOut
+                  class="code"
+                  readonly
+                  rows="4"
+                  aria-label="Reply code"
+                  [value]="connection.localCode()"
+                  (focus)="replyOut.select()"
+                ></textarea>
+                <div class="code-actions">
+                  <button
+                    type="button"
+                    class="button"
+                    (click)="copy(connection.localCode(), replyOut)"
+                  >
+                    {{ copied() ? 'Copied' : 'Copy' }}
+                  </button>
+                  @if (canShare) {
+                    <button type="button" class="button" (click)="share(connection.localCode())">
+                      Share
+                    </button>
+                  }
+                </div>
+              </li>
+            </ol>
+            <p class="hint">You are connected as soon as the host pastes it.</p>
+          }
+          @if (connection.error()) {
+            <p class="error">{{ connection.error() }}</p>
+          }
+        }
+
+        @case ('preparing') {
+          <p class="status">Creating the code…</p>
+        }
+
+        @case ('connecting') {
+          <p class="status">Connecting…</p>
+        }
+
+        @case ('connected') {
+          <p class="connected">Connected</p>
+          <section aria-labelledby="rules-title">
+            <h3 id="rules-title">Rules</h3>
+            @if (!match.isHost()) {
+              <p class="hint">The host chooses the rules.</p>
+            }
+            <div class="row choice">
+              <span class="label" id="level-label">Difficulty</span>
+              <div class="segmented" role="group" aria-labelledby="level-label">
+                @for (preset of presets; track preset.id) {
+                  <button
+                    type="button"
+                    [disabled]="!match.isHost()"
+                    [attr.aria-pressed]="match.rules().preset === preset.id"
+                    (click)="match.setRules({ preset: preset.id })"
+                  >
+                    {{ preset.label }}
+                  </button>
+                }
+              </div>
+            </div>
+            <label class="row">
+              <span>
+                <span class="label">No guessing</span>
+                <span class="hint">Both get a board that logic alone can solve.</span>
+              </span>
+              <input
+                type="checkbox"
+                role="switch"
+                [disabled]="!match.isHost()"
+                [checked]="match.rules().noGuess"
+                (change)="setNoGuess($event)"
+              />
+            </label>
+            <div class="row choice">
+              <span>
+                <span class="label" id="mine-rule-label">When you hit a mine</span>
+                <span class="hint">
+                  @if (match.rules().mineRule === 'defeat') {
+                    You lose the round. Otherwise the first to clear the board wins.
+                  } @else {
+                    The mine is flagged for you and seconds are added. Lowest time wins.
+                  }
+                </span>
+              </span>
+              <div class="segmented" role="group" aria-labelledby="mine-rule-label">
+                @for (rule of mineRules; track rule.value) {
+                  <button
+                    type="button"
+                    [disabled]="!match.isHost()"
+                    [attr.aria-pressed]="match.rules().mineRule === rule.value"
+                    (click)="match.setRules({ mineRule: rule.value })"
+                  >
+                    {{ rule.label }}
+                  </button>
+                }
+              </div>
+            </div>
+            @if (match.rules().mineRule === 'penalty') {
+              <div class="row choice">
+                <span class="label" id="penalty-label">Penalty per mine</span>
+                <div class="segmented" role="group" aria-labelledby="penalty-label">
+                  @for (seconds of penaltyOptions; track seconds) {
+                    <button
+                      type="button"
+                      [disabled]="!match.isHost()"
+                      [attr.aria-pressed]="match.rules().penaltySeconds === seconds"
+                      (click)="match.setRules({ penaltySeconds: seconds })"
+                    >
+                      +{{ seconds }} s
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          </section>
+        }
+
+        @default {
+          @if (connection.state() === 'failed') {
+            <p class="error">{{ connection.error() }}</p>
+          }
+          @if (connection.state() === 'closed') {
+            <p class="error">The connection was closed.</p>
+          }
+          <p class="intro">
+            Race a friend on the same board. No account needed: both devices only have to be on the
+            same Wi-Fi or phone hotspot. You swap two codes once, for example by AirDrop or a chat
+            message.
+          </p>
+          @if (!joining()) {
+            <div class="choices">
+              <button type="button" class="choice-button" (click)="host()">
+                <strong>Host a game</strong>
+                <span>Create an invite code and choose the rules</span>
+              </button>
+              <button type="button" class="choice-button" (click)="joining.set(true)">
+                <strong>Join a game</strong>
+                <span>Paste the invite code you received</span>
+              </button>
+            </div>
+          } @else {
+            <ol class="steps">
+              <li>
+                <span class="label">Paste the invite code from the host</span>
+                <textarea
+                  #inviteIn
+                  class="code"
+                  rows="4"
+                  aria-label="Invite code"
+                  placeholder="MS1..."
+                ></textarea>
+                <div class="code-actions">
+                  <button type="button" class="button primary" (click)="join(inviteIn.value)">
+                    Create reply code
+                  </button>
+                </div>
+              </li>
+            </ol>
+          }
+        }
+      }
+    </div>
+
+    <footer class="foot">
+      @if (connection.state() === 'connected') {
+        <button type="button" class="button" (click)="match.leave()">Leave</button>
+        @if (match.isHost()) {
+          <button type="button" class="button primary" (click)="startRound()">Start round</button>
+        } @else {
+          <span class="hint">Waiting for the host to start…</span>
+        }
+      } @else {
+        @if (canGoBack()) {
+          <button type="button" class="button back" (click)="backToStart()">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3L5 8l5 5" /></svg>
+            Back
+          </button>
+        } @else {
+          <span></span>
+        }
+        <button type="button" class="button" (click)="close()">Close</button>
+      }
+    </footer>
+  </div>
+</dialog>

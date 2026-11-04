@@ -1,0 +1,138 @@
+import { signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { MatchMessage } from '../models/match.model';
+import { ConnectionService, ConnectionState, Role } from './connection.service';
+import { GameService } from './game.service';
+import { MatchService } from './match.service';
+
+/** Stands in for the WebRTC connection: records what is sent, lets tests deliver messages. */
+class FakeConnection {
+  readonly state = signal<ConnectionState>('connected');
+  readonly role = signal<Role | null>('host');
+  readonly sent: MatchMessage[] = [];
+  private listener: ((message: MatchMessage) => void) | null = null;
+
+  send(message: MatchMessage): void {
+    this.sent.push(message);
+  }
+  onMessage(listener: (message: MatchMessage) => void): () => void {
+    this.listener = listener;
+    return () => (this.listener = null);
+  }
+  deliver(message: MatchMessage): void {
+    this.listener?.(message);
+  }
+  close(): void {
+    this.state.set('idle');
+  }
+}
+
+describe('MatchService', () => {
+  let connection: FakeConnection;
+  let match: MatchService;
+  let game: GameService;
+
+  function setUp(role: Role): void {
+    connection = new FakeConnection();
+    connection.role.set(role);
+    TestBed.configureTestingModule({
+      providers: [{ provide: ConnectionService, useValue: connection }],
+    });
+    match = TestBed.inject(MatchService);
+    game = TestBed.inject(GameService);
+    TestBed.tick();
+  }
+
+  function sentOfType<T extends MatchMessage['type']>(type: T) {
+    return connection.sent.filter((m): m is Extract<MatchMessage, { type: T }> => m.type === type);
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => vi.useRealTimers());
+
+  it('host sends the rules when connected and the exact mines when starting', () => {
+    setUp('host');
+    expect(sentOfType('rules').length).toBe(1);
+
+    match.setRules({ preset: 'intermediate', mineRule: 'penalty' });
+    match.startRound();
+    const start = sentOfType('start')[0];
+    expect(start.mines.length).toBe(40);
+    expect(start.rules.mineRule).toBe('penalty');
+    expect(match.phase()).toBe('countdown');
+  });
+
+  it('guest builds the same board from the host message after the countdown', () => {
+    setUp('guest');
+    const mines = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+    connection.deliver({
+      type: 'start',
+      round: 1,
+      rules: { preset: 'beginner', noGuess: false, mineRule: 'defeat', penaltySeconds: 10 },
+      mines,
+      start: { row: 8, col: 8 },
+    });
+    expect(game.inputLocked()).toBe(true);
+
+    vi.advanceTimersByTime(3000);
+    expect(match.phase()).toBe('playing');
+    const boardMines = game
+      .board()
+      .flat()
+      .filter((c) => c.hasMine)
+      .map((c) => c.row * 9 + c.col);
+    expect(boardMines).toEqual(mines);
+    expect(game.board()[8][8].isRevealed).toBe(true);
+  });
+
+  it('with the defeat rule, I lose and stop when the opponent clears first', () => {
+    setUp('host');
+    match.startRound();
+    vi.advanceTimersByTime(3000);
+
+    connection.deliver({
+      type: 'finished',
+      round: 1,
+      finish: { kind: 'cleared', totalMs: 20_000 },
+    });
+
+    expect(match.outcome()).toBe('lost');
+    expect(match.phase()).toBe('finished');
+    expect(game.status()).toBe('stopped');
+    expect(sentOfType('finished')[0].finish.kind).toBe('stopped');
+  });
+
+  it('with the penalty rule, I lose once my time passes the finished opponent', () => {
+    setUp('host');
+    match.setRules({ mineRule: 'penalty' });
+    match.startRound();
+    vi.advanceTimersByTime(3000);
+
+    connection.deliver({ type: 'finished', round: 1, finish: { kind: 'cleared', totalMs: 5_000 } });
+    expect(match.outcome()).toBe('pending');
+
+    vi.advanceTimersByTime(6000);
+    expect(match.outcome()).toBe('lost');
+  });
+
+  it('guest asks for a rematch instead of starting', () => {
+    setUp('guest');
+    match.startRound();
+    expect(sentOfType('rematch').length).toBe(1);
+    expect(match.rematchRequested()).toBe(true);
+  });
+
+  it('ends the match when the connection closes', () => {
+    setUp('host');
+    match.startRound();
+    vi.advanceTimersByTime(3000);
+    connection.state.set('closed');
+    TestBed.tick();
+    expect(game.mode()).toBe('solo');
+    expect(match.notice()).toContain('opponent left');
+  });
+});

@@ -115,9 +115,13 @@ function updateCell(grid: Grid, row: number, col: number, changes: Partial<CellS
 export function revealCell(grid: Grid, row: number, col: number): Grid {
   const start = grid[row][col];
   if (start.isRevealed || start.isFlagged) return grid;
+  return revealCells(grid, [start]);
+}
 
+/** Reveals several cells at once (with flood fill), copying the grid only once. */
+export function revealCells(grid: Grid, cells: { row: number; col: number }[]): Grid {
   const next = cloneGrid(grid);
-  const stack: CellState[] = [next[row][col]];
+  const stack: CellState[] = cells.map(({ row, col }) => next[row][col]);
   while (stack.length > 0) {
     const cell = stack.pop()!;
     if (cell.isRevealed || cell.isFlagged) continue;
@@ -147,7 +151,23 @@ export function chordCell(grid: Grid, row: number, col: number): Grid {
   const flags = neighbors.filter((n) => n.isFlagged).length;
   if (flags !== cell.adjacentMines) return grid;
 
-  return neighbors.reduce((current, n) => revealCell(current, n.row, n.col), grid);
+  return revealCells(grid, neighbors);
+}
+
+/**
+ * For the 1v1 time penalty: revealed mines are covered again and flagged,
+ * so the round can go on. Returns the new grid and how many mines were hit.
+ */
+export function coverHitMines(grid: Grid): { grid: Grid; hit: number } {
+  let hit = 0;
+  const next = grid.map((line) =>
+    line.map((cell) => {
+      if (!cell.hasMine || !cell.isRevealed) return cell;
+      hit++;
+      return { ...cell, isRevealed: false, isFlagged: true };
+    }),
+  );
+  return { grid: next, hit };
 }
 
 export function isLost(grid: Grid): boolean {

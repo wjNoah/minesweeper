@@ -1,6 +1,6 @@
 export type ThemeSetting = 'system' | 'light' | 'dark';
 export type CellScale = 1 | 1.25 | 1.5;
-export type KeyAction = 'flag' | 'reveal' | 'newGame' | 'flagMode';
+export type KeyAction = 'flag' | 'reveal' | 'newGame' | 'flagMode' | 'hint';
 export type KeyBindings = Record<KeyAction, string>;
 
 export interface Settings {
@@ -8,6 +8,8 @@ export interface Settings {
   cellScale: CellScale;
   /** First click opens an area (clicked cell and neighbors are mine-free), not just one cell. */
   safeArea: boolean;
+  /** Only deal boards that can be solved by logic alone from the first click. */
+  noGuess: boolean;
   /** A single click on a number chords. Double-click always chords. */
   chordOnClick: boolean;
   /** Mark the hidden neighbors of the number under the pointer or keyboard cursor. */
@@ -21,16 +23,18 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
   cellScale: 1,
   safeArea: true,
+  noGuess: false,
   chordOnClick: true,
   highlightNeighbors: true,
   haptics: true,
-  keys: { flag: 'f', reveal: ' ', newGame: 'r', flagMode: 'm' },
+  keys: { flag: 'f', reveal: ' ', newGame: 'r', flagMode: 'm', hint: 'h' },
 };
 
 export const KEY_ACTIONS: readonly { id: KeyAction; label: string }[] = [
   { id: 'reveal', label: 'Reveal or open neighbors' },
   { id: 'flag', label: 'Flag' },
   { id: 'flagMode', label: 'Switch Reveal / Flag' },
+  { id: 'hint', label: 'Hint' },
   { id: 'newGame', label: 'New game' },
 ];
 
@@ -41,7 +45,19 @@ export const CELL_SCALES: readonly { value: CellScale; label: string }[] = [
 ];
 
 /** Keys with a fixed meaning (moving, Enter to reveal, leaving the board or a dialog). */
-const RESERVED_KEYS = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'enter', 'tab', 'escape'];
+const RESERVED_KEYS = [
+  'arrowup',
+  'arrowdown',
+  'arrowleft',
+  'arrowright',
+  'w',
+  'a',
+  's',
+  'd',
+  'enter',
+  'tab',
+  'escape',
+];
 
 /** Only single characters (letters, digits, symbols, Space) can be bound. */
 export function isBindableKey(key: string): boolean {
@@ -82,6 +98,7 @@ export function parseSettings(value: unknown): Settings {
       DEFAULT_SETTINGS.cellScale,
     ),
     safeArea: bool('safeArea', DEFAULT_SETTINGS.safeArea),
+    noGuess: bool('noGuess', DEFAULT_SETTINGS.noGuess),
     chordOnClick: bool('chordOnClick', DEFAULT_SETTINGS.chordOnClick),
     highlightNeighbors: bool('highlightNeighbors', DEFAULT_SETTINGS.highlightNeighbors),
     haptics: bool('haptics', DEFAULT_SETTINGS.haptics),

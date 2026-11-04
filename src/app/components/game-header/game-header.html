@@ -6,12 +6,14 @@
     </div>
     <div>
       <dt>Time</dt>
-      <dd>{{ formatTime(game.elapsedSeconds()) }}</dd>
+      <dd>{{ formatTime(game.displaySeconds()) }}</dd>
     </div>
-    <div>
-      <dt>Best</dt>
-      <dd>{{ bestLabel() }}</dd>
-    </div>
+    @if (game.mode() === 'solo') {
+      <div>
+        <dt>Best</dt>
+        <dd>{{ bestLabel() }}</dd>
+      </div>
+    }
   </dl>
 
   <div class="actions">
@@ -27,26 +29,64 @@
         Flag
       </button>
     </div>
-    <button type="button" class="button" (click)="game.newGame()">New game</button>
+    @if (game.mode() === 'solo') {
+      <button
+        type="button"
+        class="button"
+        [disabled]="game.status() !== 'playing'"
+        (click)="game.showHint()"
+      >
+        Hint
+      </button>
+      <button type="button" class="button" (click)="game.newGame()">New game</button>
+    }
   </div>
 </div>
 
-<p class="message" [attr.data-status]="game.status()" aria-live="polite">
-  @switch (game.status()) {
-    @case ('won') {
-      Cleared in {{ formatTime(game.elapsedSeconds()) }}.
-      @if (game.isNewBest()) {
-        New best time.
+@if (game.mode() === 'solo') {
+  <p
+    class="message"
+    [class.hinting]="game.hint() || game.noHintAvailable()"
+    [attr.data-status]="game.status()"
+    aria-live="polite"
+  >
+    @switch (game.status()) {
+      @case ('won') {
+        Cleared in {{ formatTime(game.elapsedSeconds()) }}.
+        @if (game.hintsUsed() > 0) {
+          {{ game.hintsUsed() === 1 ? '1 hint' : game.hintsUsed() + ' hints' }} used, so this
+          doesn't count for best times.
+        } @else if (game.isNewBest()) {
+          New best time.
+        }
+      }
+      @case ('lost') {
+        You hit a mine. Press <kbd>R</kbd> or New game to try again.
+      }
+      @case ('ready') {
+        {{ boardSize() }}. The first click is always safe.
+      }
+      @default {
+        @if (game.hint(); as hint) {
+          @switch (hint.kind) {
+            @case ('safe') {
+              Hint: the outlined cell is safe to open.
+            }
+            @case ('mine') {
+              Hint: the outlined cell is a mine. Flag it.
+            }
+            @case ('wrong-flag') {
+              Hint: the outlined flag is wrong. Remove it.
+            }
+          }
+        } @else if (game.noHintAvailable()) {
+          No move can be proven right now. You'll have to guess.
+        } @else if (game.noGuessFallback()) {
+          No board without guessing was found quickly, so this one may need a guess.
+        } @else {
+          {{ boardSize() }}.
+        }
       }
     }
-    @case ('lost') {
-      You hit a mine. Press <kbd>R</kbd> or New game to try again.
-    }
-    @case ('ready') {
-      {{ boardSize() }}. The first click is always safe.
-    }
-    @default {
-      {{ boardSize() }}.
-    }
-  }
-</p>
+  </p>
+}

@@ -12,6 +12,10 @@ export class PicturePicker {
   readonly label = input.required<string>();
   readonly image = input<string | null>(null);
   readonly busy = input(false);
+  /** Shown in the thumbnail while there is no picture. */
+  readonly emptyLabel = input('None');
+  /** Show the whole picture (icons) instead of cropping it to fill the thumbnail. */
+  readonly contain = input(false);
 
   readonly chosen = output<File>();
   readonly removed = output<void>();

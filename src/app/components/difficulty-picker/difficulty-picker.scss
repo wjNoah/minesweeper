@@ -37,6 +37,13 @@
   }
 }
 
+// Matches the app header: below 800px the tabs sit on their own row, starting at the left.
+@media (max-width: 800px) {
+  :host {
+    align-items: flex-start;
+  }
+}
+
 @media (max-width: 600px) {
   :host {
     align-items: stretch;

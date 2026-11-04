@@ -1,4 +1,12 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(grep -rnE *)",
+      "Bash(npx ng *)",
+      "Bash(npx prettier *)",
+      "Bash(python3 -)"
+    ]
+  },
   "enabledMcpjsonServers": [
     "idea"
   ],

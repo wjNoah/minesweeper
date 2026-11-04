@@ -2,6 +2,7 @@ import {
   chordCell,
   computeAdjacentCounts,
   countFlags,
+  coverHitMines,
   countMines,
   createEmptyBoard,
   flagAllMines,
@@ -259,5 +260,16 @@ describe('isWon and isLost', () => {
     expect(grid[0][0].isFlagged).toBe(true);
     expect(grid[1][1].isFlagged).toBe(true);
     expect(countFlags(grid)).toBe(2);
+  });
+});
+
+describe('coverHitMines', () => {
+  it('covers and flags revealed mines and counts them', () => {
+    const grid = revealCell(gridFromLayout(['*.', '..']), 0, 0);
+    const { grid: covered, hit } = coverHitMines(grid);
+    expect(hit).toBe(1);
+    expect(covered[0][0].isRevealed).toBe(false);
+    expect(covered[0][0].isFlagged).toBe(true);
+    expect(isLost(covered)).toBe(false);
   });
 });

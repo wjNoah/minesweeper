@@ -31,6 +31,12 @@ describe('parseSettings', () => {
     const settings = parseSettings({ keys: { flag: 'Enter' } });
     expect(settings.keys.flag).toBe('f');
   });
+
+  it('ignores W A S D in stored bindings, because they move the cursor', () => {
+    const settings = parseSettings({ keys: { flag: 'w', hint: 'd' } });
+    expect(settings.keys.flag).toBe('f');
+    expect(settings.keys.hint).toBe('h');
+  });
 });
 
 describe('rebindKey', () => {
@@ -50,6 +56,8 @@ describe('isBindableKey and keyLabel', () => {
     expect(isBindableKey('q')).toBe(true);
     expect(isBindableKey(' ')).toBe(true);
     expect(isBindableKey('ArrowUp')).toBe(false);
+    expect(isBindableKey('w')).toBe(false);
+    expect(isBindableKey('D')).toBe(false);
     expect(isBindableKey('Enter')).toBe(false);
     expect(isBindableKey('Shift')).toBe(false);
   });

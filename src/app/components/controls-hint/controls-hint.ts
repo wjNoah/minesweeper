@@ -14,8 +14,9 @@ export class ControlsHint {
 
   /** Labels of the current key bindings, so the hint matches the settings. */
   protected readonly keys = computed(() => {
-    const { flag, reveal, newGame, flagMode } = this.settings.settings().keys;
+    const { flag, reveal, newGame, flagMode, hint } = this.settings.settings().keys;
     return {
+      hint: keyLabel(hint),
       flag: keyLabel(flag),
       reveal: keyLabel(reveal),
       newGame: keyLabel(newGame),

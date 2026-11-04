@@ -5,6 +5,15 @@
     <div class="tools">
       <button
         type="button"
+        class="icon-button text"
+        aria-label="Play 1v1 on the same network"
+        aria-haspopup="dialog"
+        (click)="matchDialog.open()"
+      >
+        1v1
+      </button>
+      <button
+        type="button"
         class="icon-button"
         aria-label="Customize board and background"
         aria-haspopup="dialog"
@@ -59,9 +68,11 @@
   </header>
 
   <app-game-header />
+  <app-match-bar (openRules)="matchDialog.open()" />
   <app-board />
   <app-controls-hint />
 </main>
 
 <app-settings-dialog #settingsDialog />
+<app-match-dialog #matchDialog />
 <app-customize-dialog #customizeDialog />

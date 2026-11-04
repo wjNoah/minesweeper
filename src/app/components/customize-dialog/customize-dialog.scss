@@ -74,6 +74,29 @@
   font-weight: 600;
 }
 
+.icon-preview {
+  display: flex;
+  gap: 3px;
+  width: fit-content;
+  margin-bottom: 1rem;
+  padding: 12px;
+  border: 1px solid var(--board-line);
+  border-radius: var(--radius);
+  background: var(--board-bg);
+  // One row of three cells, for the "whole board" block picture.
+  --board-rows: 1;
+  --board-cols: 3;
+}
+
+.picker-label {
+  margin-top: 0.25rem;
+}
+
+.foot {
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 .privacy {
   margin-top: 0.25rem;
 }

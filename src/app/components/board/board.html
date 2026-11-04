@@ -10,7 +10,7 @@
     "
     (contextmenu)="$event.preventDefault()"
     (pointerleave)="onPointerLeave()"
-    (focusin)="onFocusChange()"
+    (focusin)="onFocusIn($event)"
     (focusout)="onFocusChange()"
   >
     @for (line of game.board(); track $index) {
@@ -21,6 +21,9 @@
             [lost]="game.status() === 'lost'"
             [focusable]="isCursor(cell.row, cell.col)"
             [highlighted]="isHighlighted(cell.row, cell.col)"
+            [hint]="hintFor(cell.row, cell.col)"
+            [customFlag]="customFlag()"
+            [customMine]="customMine()"
             [haptics]="settings.settings().haptics"
             (primary)="onPrimary(cell.row, cell.col)"
             (secondary)="game.secondaryAction(cell.row, cell.col)"

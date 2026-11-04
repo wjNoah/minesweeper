@@ -1,12 +1,19 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { CellState } from '../../models/cell.model';
+import { HintKind } from '../../services/solver';
 
 const LONG_PRESS_MS = 400;
 /** A finger moving further than this is scrolling, not pressing. */
 const MOVE_TOLERANCE_PX = 10;
 
 type CellView = 'hidden' | 'flagged' | 'wrong-flag' | 'mine' | 'exploded' | 'number' | 'empty';
+
+const HINT_LABELS: Record<HintKind, string> = {
+  safe: 'safe to open',
+  mine: 'this is a mine',
+  'wrong-flag': 'this flag is wrong',
+};
 
 @Component({
   selector: 'app-cell',
@@ -25,6 +32,11 @@ export class Cell {
   readonly focusable = input(false);
   /** Hidden neighbor of the number under the pointer or keyboard cursor. */
   readonly highlighted = input(false);
+  /** Set when this cell is the current hint. */
+  readonly hint = input<HintKind | null>(null);
+  /** Show the user's own flag or mine picture instead of the built-in drawing. */
+  readonly customFlag = input(false);
+  readonly customMine = input(false);
   /** Vibrate when a long press flags the cell (on phones that support it). */
   readonly haptics = input(true);
 
@@ -55,6 +67,12 @@ export class Cell {
   });
 
   protected readonly label = computed(() => {
+    const hint = this.hint();
+    const suffix = hint ? `, hint: ${HINT_LABELS[hint]}` : '';
+    return this.stateLabel() + suffix;
+  });
+
+  private readonly stateLabel = computed(() => {
     const { row, col, adjacentMines } = this.cell();
     const position = `row ${row + 1}, column ${col + 1}`;
     switch (this.view()) {
