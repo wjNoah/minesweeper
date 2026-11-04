@@ -20,6 +20,14 @@ import { generateNoGuessBoard } from './solver';
 /** lobby: connected, choosing rules. countdown → playing → finished, then a rematch goes back to countdown. */
 export type MatchPhase = 'lobby' | 'countdown' | 'playing' | 'finished';
 
+/**
+ * Progress goes over the internet and every message counts towards the relay's
+ * daily limit, so it is sent at most twice a second. The last update always arrives.
+ */
+const PROGRESS_INTERVAL_MS = 500;
+
+type ProgressMessage = Extract<MatchMessage, { type: 'progress' }>;
+
 export interface OpponentProgress {
   revealed: number;
   minesHit: number;
@@ -61,6 +69,9 @@ export class MatchService {
   private round = 0;
   private countdownTimer: ReturnType<typeof setInterval> | undefined;
   private raceTimer: ReturnType<typeof setInterval> | undefined;
+  private progressTimer: ReturnType<typeof setTimeout> | undefined;
+  private pendingProgress: ProgressMessage | null = null;
+  private lastProgressAt = 0;
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.stopTimers());
@@ -98,7 +109,8 @@ export class MatchService {
       if (untracked(this.phase) !== 'playing') return;
 
       const revealed = board.flat().filter((cell) => cell.isRevealed && !cell.hasMine).length;
-      this.send({ type: 'progress', round: this.round, revealed, minesHit });
+      const roundOver = status === 'won' || status === 'lost';
+      this.queueProgress({ type: 'progress', round: this.round, revealed, minesHit }, roundOver);
       if (status === 'won') untracked(() => this.finishMine('cleared'));
       if (status === 'lost') untracked(() => this.finishMine('exploded'));
     });
@@ -264,6 +276,26 @@ export class MatchService {
     if (this.game.mode() === 'match') this.game.leaveMatch();
   }
 
+  /** Sends now if the last update is old enough (or the round is over), otherwise a bit later. */
+  private queueProgress(message: ProgressMessage, now: boolean): void {
+    this.pendingProgress = message;
+    const wait = this.lastProgressAt + PROGRESS_INTERVAL_MS - Date.now();
+    if (now || wait <= 0) {
+      this.flushProgress();
+    } else if (this.progressTimer === undefined) {
+      this.progressTimer = setTimeout(() => this.flushProgress(), wait);
+    }
+  }
+
+  private flushProgress(): void {
+    clearTimeout(this.progressTimer);
+    this.progressTimer = undefined;
+    if (!this.pendingProgress) return;
+    this.send(this.pendingProgress);
+    this.pendingProgress = null;
+    this.lastProgressAt = Date.now();
+  }
+
   private send(message: MatchMessage): void {
     this.transport().send(message);
   }
@@ -271,5 +303,8 @@ export class MatchService {
   private stopTimers(): void {
     clearInterval(this.countdownTimer);
     clearInterval(this.raceTimer);
+    clearTimeout(this.progressTimer);
+    this.progressTimer = undefined;
+    this.pendingProgress = null;
   }
 }

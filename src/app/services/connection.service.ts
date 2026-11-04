@@ -1,89 +1,91 @@
 import { Injectable, signal } from '@angular/core';
+import { environment } from '../../environments/environment';
 import { MatchMessage, parseMatchMessage } from '../models/match.model';
 import { MatchTransport } from './match-transport';
-import { decodeDescription, encodeDescription, InvalidCodeError } from './signaling';
+import { createRoomCode, normalizeRoomCode } from './room-code';
 
 /**
- * idle → preparing (creating a code) → waiting (code shown, waiting for the
- * other code) → connecting → connected. failed and closed are end states.
+ * idle → connecting → (host: waiting for the guest) → connected.
+ * failed and closed are end states.
  */
-export type ConnectionState =
-  'idle' | 'preparing' | 'waiting' | 'connecting' | 'connected' | 'failed' | 'closed';
+export type ConnectionState = 'idle' | 'connecting' | 'waiting' | 'connected' | 'failed' | 'closed';
 
 export type Role = 'host' | 'guest';
 
-const ICE_GATHERING_TIMEOUT_MS = 4000;
-const CONNECT_TIMEOUT_MS = 15000;
-const NETWORK_ERROR =
-  'Could not connect. Check that both devices are on the same Wi-Fi or hotspot. ' +
-  'Some school and public networks block devices from talking to each other.';
+/** Close codes sent by the relay (relay/src/index.ts). */
+const CLOSE = {
+  opponentLeft: 4000,
+  notFound: 4004,
+  codeTaken: 4009,
+  full: 4010,
+  tooBig: 4013,
+  tooMany: 4029,
+  busy: 4503,
+} as const;
+
+/** What the relay sends (not a game message): both players are in the room. */
+const PAIRED = 'paired';
+/** Keeps the connection alive through Wi-Fi routers that drop silent connections. */
+const PING_INTERVAL_MS = 30_000;
+/** A host waiting longer than this has probably forgotten the room. */
+const WAIT_LIMIT_MS = 15 * 60_000;
+/** A new room code is tried this often if a code happens to be in use already. */
+const MAX_CODE_ATTEMPTS = 3;
+
+const MESSAGES = {
+  unreachable:
+    'Could not reach the game server. Check your internet connection and try again. ' +
+    'If it keeps failing, online play may have reached its daily limit: try again later, ' +
+    'or play against the bot.',
+  busy: 'Online play has reached its daily limit. Try again later, or play against the bot.',
+  invalidCode: 'A room code has 5 letters and numbers, like K7XPM.',
+  notFound:
+    'There is no room with this code. Check the code, or ask your friend to create a new room.',
+  full: 'This room already has two players.',
+  tooMany: 'The connection was closed because too many messages were sent.',
+  expired: 'The room closed because nobody joined for 15 minutes.',
+  lost: 'The connection to the game server was lost.',
+};
 
 /**
- * A direct browser-to-browser connection (WebRTC data channel). No server
- * and no STUN: only addresses in the local network are used, so both devices
- * must be on the same Wi-Fi or hotspot.
+ * Connects to another person through the relay on Cloudflare. The host creates a
+ * room with a random 5-letter code, the guest joins with that code, and from then
+ * on the relay passes every message on to the other player.
  */
 @Injectable({ providedIn: 'root' })
 export class ConnectionService implements MatchTransport {
   readonly state = signal<ConnectionState>('idle');
   readonly role = signal<Role | null>(null);
-  /** The code to send to the other player: an invite (host) or a reply (guest). */
-  readonly localCode = signal('');
+  readonly roomCode = signal('');
   readonly error = signal('');
+  /** False until the relay address is filled in (src/environments/environment.ts). */
+  readonly isAvailable = environment.relayUrl !== '';
 
-  private peer: RTCPeerConnection | null = null;
-  private channel: RTCDataChannel | null = null;
-  private connectTimer: ReturnType<typeof setTimeout> | undefined;
+  private socket: WebSocket | null = null;
+  private codeAttempts = 0;
+  private pingTimer: ReturnType<typeof setInterval> | undefined;
+  private waitTimer: ReturnType<typeof setTimeout> | undefined;
   private readonly listeners = new Set<(message: MatchMessage) => void>();
 
-  /** Host step 1: create the invite code. */
-  async host(): Promise<void> {
-    try {
-      const peer = this.start('host');
-      this.attachChannel(peer.createDataChannel('match', { ordered: true }));
-      await peer.setLocalDescription(await peer.createOffer());
-      await this.publishLocalDescription(peer);
-    } catch (error) {
-      this.fail(error);
-    }
+  /** Creates a room and waits for a guest. */
+  host(): void {
+    this.codeAttempts = 1;
+    this.open('host', createRoomCode());
   }
 
-  /** Guest: read the invite and create the reply code. */
-  async join(inviteCode: string): Promise<void> {
-    try {
-      const offer = await decodeDescription(inviteCode, 'offer');
-      const peer = this.start('guest');
-      peer.ondatachannel = (event) => this.attachChannel(event.channel);
-      await peer.setRemoteDescription(offer);
-      await peer.setLocalDescription(await peer.createAnswer());
-      await this.publishLocalDescription(peer);
-      this.startConnectTimer();
-    } catch (error) {
-      this.fail(error);
+  join(input: string): void {
+    const code = normalizeRoomCode(input);
+    if (!code) {
+      this.fail(MESSAGES.invalidCode);
+      return;
     }
-  }
-
-  /** Host step 2: read the guest's reply. The connection opens by itself after this. */
-  async acceptReply(replyCode: string): Promise<void> {
-    if (!this.peer || this.role() !== 'host') return;
-    try {
-      const answer = await decodeDescription(replyCode, 'answer');
-      this.state.set('connecting');
-      await this.peer.setRemoteDescription(answer);
-      this.startConnectTimer();
-    } catch (error) {
-      // A wrong code is a typing mistake, so let the host try again.
-      if (error instanceof InvalidCodeError) {
-        this.error.set(error.message);
-        this.state.set('waiting');
-      } else {
-        this.fail(error);
-      }
-    }
+    this.open('guest', code);
   }
 
   send(message: MatchMessage): void {
-    if (this.channel?.readyState === 'open') this.channel.send(JSON.stringify(message));
+    if (this.state() === 'connected' && this.socket?.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify(message));
+    }
   }
 
   /** Calls the listener for every valid message. Returns a function that removes it. */
@@ -97,92 +99,97 @@ export class ConnectionService implements MatchTransport {
     this.cleanUp();
     this.state.set('idle');
     this.role.set(null);
+    this.roomCode.set('');
+    this.error.set('');
   }
 
-  private start(role: Role): RTCPeerConnection {
+  private open(role: Role, code: string): void {
     this.cleanUp();
     this.role.set(role);
+    this.roomCode.set(code);
     this.error.set('');
-    this.localCode.set('');
-    this.state.set('preparing');
+    this.state.set('connecting');
 
-    const peer = new RTCPeerConnection({ iceServers: [] });
-    peer.onconnectionstatechange = () => {
-      if (peer.connectionState === 'failed') this.fail(new Error(NETWORK_ERROR));
-    };
-    this.peer = peer;
-    return peer;
-  }
+    const query = role === 'host' ? '?create' : '';
+    const socket = new WebSocket(`${environment.relayUrl}/room/${code}${query}`);
+    let opened = false;
+    this.socket = socket;
 
-  private attachChannel(channel: RTCDataChannel): void {
-    this.channel = channel;
-    channel.onopen = () => {
-      clearTimeout(this.connectTimer);
-      this.state.set('connected');
-    };
-    channel.onclose = () => {
-      if (this.state() === 'connected') this.state.set('closed');
-    };
-    channel.onmessage = (event: MessageEvent) => {
-      // The other device is not trusted: wrong, oversized or odd messages are dropped.
-      const parsed = parseMatchMessage(event.data);
-      if (!parsed) return;
-      if (parsed.type === 'leave') {
-        this.state.set('closed');
-        return;
+    socket.onopen = () => {
+      opened = true;
+      this.pingTimer = setInterval(() => socket.send('ping'), PING_INTERVAL_MS);
+      if (role === 'host') {
+        this.state.set('waiting');
+        this.waitTimer = setTimeout(() => this.fail(MESSAGES.expired), WAIT_LIMIT_MS);
       }
-      this.listeners.forEach((listener) => listener(parsed));
     };
+    socket.onmessage = (event: MessageEvent) => this.receive(event.data);
+    socket.onclose = (event: CloseEvent) => this.onClosed(event.code, opened);
   }
 
-  /**
-   * The code must contain the network addresses (ICE candidates), because it
-   * is the only thing exchanged. So wait until the browser has found them.
-   */
-  private async publishLocalDescription(peer: RTCPeerConnection): Promise<void> {
-    await waitForIceGathering(peer);
-    if (!peer.localDescription) throw new Error('No local description');
-    this.localCode.set(await encodeDescription(peer.localDescription));
-    this.state.set('waiting');
+  private receive(data: unknown): void {
+    if (data === 'pong') return;
+    if (data === PAIRED) {
+      clearTimeout(this.waitTimer);
+      this.state.set('connected');
+      return;
+    }
+    // The other player is not trusted: wrong, oversized or odd messages are dropped.
+    const message = parseMatchMessage(data);
+    if (!message) return;
+    if (message.type === 'leave') {
+      this.cleanUp();
+      this.state.set('closed');
+      return;
+    }
+    this.listeners.forEach((listener) => listener(message));
   }
 
-  private startConnectTimer(): void {
-    clearTimeout(this.connectTimer);
-    this.connectTimer = setTimeout(() => {
-      if (this.state() !== 'connected') this.fail(new Error(NETWORK_ERROR));
-    }, CONNECT_TIMEOUT_MS);
-  }
-
-  private fail(error: unknown): void {
+  /** Turns the relay's close code into what the player sees. */
+  private onClosed(code: number, opened: boolean): void {
+    const wasConnected = this.state() === 'connected';
     this.cleanUp();
-    this.error.set(error instanceof Error && error.message ? error.message : NETWORK_ERROR);
+    switch (code) {
+      case CLOSE.codeTaken:
+        // Someone else is using this code right now: quietly try another one.
+        if (this.role() === 'host' && this.codeAttempts < MAX_CODE_ATTEMPTS) {
+          this.codeAttempts++;
+          this.open('host', createRoomCode());
+        } else {
+          this.fail(MESSAGES.unreachable);
+        }
+        return;
+      case CLOSE.notFound:
+        return this.fail(MESSAGES.notFound);
+      case CLOSE.full:
+        return this.fail(MESSAGES.full);
+      case CLOSE.busy:
+        return this.fail(MESSAGES.busy);
+      case CLOSE.tooBig:
+      case CLOSE.tooMany:
+        return this.fail(MESSAGES.tooMany);
+    }
+    if (wasConnected) {
+      this.state.set('closed');
+    } else {
+      this.fail(opened ? MESSAGES.lost : MESSAGES.unreachable);
+    }
+  }
+
+  private fail(message: string): void {
+    this.cleanUp();
+    this.error.set(message);
     this.state.set('failed');
   }
 
   private cleanUp(): void {
-    clearTimeout(this.connectTimer);
-    if (this.channel) {
-      this.channel.onclose = null;
-      this.channel.close();
+    clearInterval(this.pingTimer);
+    clearTimeout(this.waitTimer);
+    if (this.socket) {
+      // Detach first, so closing on purpose isn't reported as a lost connection.
+      this.socket.onopen = this.socket.onmessage = this.socket.onclose = null;
+      this.socket.close(1000);
+      this.socket = null;
     }
-    this.peer?.close();
-    this.channel = null;
-    this.peer = null;
   }
-}
-
-function waitForIceGathering(peer: RTCPeerConnection): Promise<void> {
-  if (peer.iceGatheringState === 'complete') return Promise.resolve();
-  return new Promise((resolve) => {
-    const timer = setTimeout(done, ICE_GATHERING_TIMEOUT_MS);
-    function done(): void {
-      clearTimeout(timer);
-      peer.removeEventListener('icegatheringstatechange', check);
-      resolve();
-    }
-    function check(): void {
-      if (peer.iceGatheringState === 'complete') done();
-    }
-    peer.addEventListener('icegatheringstatechange', check);
-  });
 }

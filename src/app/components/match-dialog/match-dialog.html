@@ -10,88 +10,20 @@
     <div class="body" aria-live="polite">
       @switch (view()) {
         @case ('waiting') {
-          @if (connection.role() === 'host') {
-            <ol class="steps">
-              <li>
-                <span class="label">Send this invite code to your opponent</span>
-                <textarea
-                  #invite
-                  class="code"
-                  readonly
-                  rows="4"
-                  aria-label="Invite code"
-                  [value]="connection.localCode()"
-                  (focus)="invite.select()"
-                ></textarea>
-                <div class="code-actions">
-                  <button
-                    type="button"
-                    class="button"
-                    (click)="copy(connection.localCode(), invite)"
-                  >
-                    {{ copied() ? 'Copied' : 'Copy' }}
-                  </button>
-                  @if (canShare) {
-                    <button type="button" class="button" (click)="share(connection.localCode())">
-                      Share
-                    </button>
-                  }
-                </div>
-              </li>
-              <li>
-                <span class="label">Paste the reply code you get back</span>
-                <textarea
-                  #reply
-                  class="code"
-                  rows="4"
-                  aria-label="Reply code"
-                  placeholder="MS1..."
-                ></textarea>
-                <div class="code-actions">
-                  <button type="button" class="button primary" (click)="acceptReply(reply.value)">
-                    Connect
-                  </button>
-                </div>
-              </li>
-            </ol>
-          } @else {
-            <ol class="steps" start="2">
-              <li>
-                <span class="label">Send this reply code back to the host</span>
-                <textarea
-                  #replyOut
-                  class="code"
-                  readonly
-                  rows="4"
-                  aria-label="Reply code"
-                  [value]="connection.localCode()"
-                  (focus)="replyOut.select()"
-                ></textarea>
-                <div class="code-actions">
-                  <button
-                    type="button"
-                    class="button"
-                    (click)="copy(connection.localCode(), replyOut)"
-                  >
-                    {{ copied() ? 'Copied' : 'Copy' }}
-                  </button>
-                  @if (canShare) {
-                    <button type="button" class="button" (click)="share(connection.localCode())">
-                      Share
-                    </button>
-                  }
-                </div>
-              </li>
-            </ol>
-            <p class="hint">You are connected as soon as the host pastes it.</p>
-          }
-          @if (connection.error()) {
-            <p class="error">{{ connection.error() }}</p>
-          }
-        }
-
-        @case ('preparing') {
-          <p class="status">Creating the code…</p>
+          <p class="label">Tell your friend this room code</p>
+          <p class="room-code" [attr.aria-label]="spelledCode()">{{ connection.roomCode() }}</p>
+          <div class="code-actions">
+            <button type="button" class="button" (click)="copy(connection.roomCode())">
+              {{ copied() ? 'Copied' : 'Copy' }}
+            </button>
+            @if (canShare) {
+              <button type="button" class="button" (click)="share(connection.roomCode())">
+                Share
+              </button>
+            }
+          </div>
+          <p class="status">Waiting for your friend to join…</p>
+          <p class="hint">They click 1v1, then Join a room, and type the code.</p>
         }
 
         @case ('connecting') {
@@ -207,45 +139,52 @@
           @if (connection.state() === 'closed') {
             <p class="error">The connection was closed.</p>
           }
-          <p class="intro">
-            Race on exactly the same board. Against a friend, both devices have to be on the same
-            Wi-Fi or phone hotspot, and you swap two codes once (for example by AirDrop or a chat
-            message). A code contains your device's local network address, so only send it to your
-            opponent.
-          </p>
           @if (!joining()) {
+            <p class="intro">
+              Race on exactly the same board. To play a friend, one of you creates a room and tells
+              the other the 5-letter code. Works on any network, no account needed.
+            </p>
             <div class="choices">
-              <button type="button" class="choice-button" (click)="host()">
-                <strong>Host a game</strong>
-                <span>Create an invite code and choose the rules</span>
-              </button>
-              <button type="button" class="choice-button" (click)="joining.set(true)">
-                <strong>Join a game</strong>
-                <span>Paste the invite code you received</span>
-              </button>
+              @if (connection.isAvailable) {
+                <button type="button" class="choice-button" (click)="host()">
+                  <strong>Create a room</strong>
+                  <span>Get a code for your friend and choose the rules</span>
+                </button>
+                <button type="button" class="choice-button" (click)="joining.set(true)">
+                  <strong>Join a room</strong>
+                  <span>Type the code your friend gives you</span>
+                </button>
+              }
               <button type="button" class="choice-button bot-choice" (click)="playBot()">
                 <strong>Play against a bot</strong>
-                <span>Race the computer on this device. Works anywhere, no network needed.</span>
+                <span>Race the computer on this device. Works anywhere, even offline.</span>
               </button>
             </div>
+            @if (!connection.isAvailable) {
+              <p class="hint">Playing against a friend is not set up on this site yet.</p>
+            }
           } @else {
-            <ol class="steps">
-              <li>
-                <span class="label">Paste the invite code from the host</span>
-                <textarea
-                  #inviteIn
-                  class="code"
-                  rows="4"
-                  aria-label="Invite code"
-                  placeholder="MS1..."
-                ></textarea>
-                <div class="code-actions">
-                  <button type="button" class="button primary" (click)="join(inviteIn.value)">
-                    Create reply code
-                  </button>
-                </div>
-              </li>
-            </ol>
+            <label class="label" for="room-code-input">Room code</label>
+            <div class="join-row">
+              <input
+                #codeInput
+                id="room-code-input"
+                class="code-input"
+                type="text"
+                maxlength="7"
+                placeholder="K7XPM"
+                autocomplete="off"
+                autocapitalize="characters"
+                spellcheck="false"
+                enterkeyhint="go"
+                [value]="codeDraft()"
+                (input)="codeDraft.set(codeInput.value)"
+                (keydown.enter)="join(codeInput.value)"
+              />
+              <button type="button" class="button primary" (click)="join(codeInput.value)">
+                Join
+              </button>
+            </div>
           }
         }
       }

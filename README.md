@@ -4,7 +4,7 @@
   A modern Minesweeper for the browser: no-guessing boards, a hint solver, six colour themes,
   your own pictures, full keyboard play and a 1v1 race against a bot or a friend.
   <br>
-  No account, no server, nothing to install for players.
+  No account, no login, nothing to install for players.
 </p>
 
 <p align="center">
@@ -32,6 +32,7 @@
 - [Customize](#customize)
 - [On your phone](#on-your-phone)
 - [1v1: a bot or a friend](#1v1-a-bot-or-a-friend)
+- [Online 1v1 server (Cloudflare)](#online-1v1-server-cloudflare)
 - [Project structure](#project-structure)
 - [How it works](#how-it-works)
 - [Testing](#testing)
@@ -49,8 +50,8 @@
   you never face a coin flip.
 - **Hints.** One button shows a move that logic proves is right, or a flag that is wrong.
 - **1v1 race.** Race a **bot** on your own device (three strengths, no network needed), or a
-  **friend** on the same Wi-Fi or hotspot. Both play exactly the same board. No login, no
-  server. You can choose "lose on a mine" or a time penalty.
+  **friend** anywhere with a 5-letter room code. Both play exactly the same board. No login.
+  You can choose "lose on a mine" or a time penalty.
 - **Make it yours.** Six colour themes (each in light and dark), your own background picture,
   your own block picture, and your own flag and mine.
 - **Plays anywhere.** Mouse, trackpad, touch and keyboard (arrow keys or W A S D). Nothing needs a
@@ -58,8 +59,8 @@
 - **Accessible.** Every cell is a real button with a spoken label such as "row 3, column 5,
   flagged". Numbers are never shown by colour alone, text contrast meets WCAG AA (4.5:1), and
   animations switch off if your system asks for reduced motion.
-- **Private.** No accounts, no tracking, no network requests. Everything (settings, best times,
-  pictures) stays in your browser.
+- **Private.** No accounts and no tracking. Everything (settings, best times, pictures) stays in
+  your browser. The only network traffic is a 1v1 match against a friend.
 
 ## Quick start
 
@@ -72,12 +73,12 @@ npm start
 
 Then open <http://localhost:4200>.
 
-| Command             | What it does                                                          |
-| ------------------- | --------------------------------------------------------------------- |
-| `npm start`         | Development server at `localhost:4200` with live reload.              |
-| `npm run start:lan` | The same, but reachable from other devices on your network (for 1v1). |
-| `npm test`          | Runs all unit tests (Vitest) in watch mode.                           |
-| `npm run build`     | Production build into `dist/minesweeper/browser`.                     |
+| Command             | What it does                                                 |
+| ------------------- | ------------------------------------------------------------ |
+| `npm start`         | Development server at `localhost:4200` with live reload.     |
+| `npm run start:lan` | The same, but reachable from your phone on the same network. |
+| `npm test`          | Runs all unit tests (Vitest) in watch mode.                  |
+| `npm run build`     | Production build into `dist/minesweeper/browser`.            |
 
 ## How to play
 
@@ -233,11 +234,10 @@ visible on its own board. It opens proven cells, flags proven mines, has to gues
 be proven, and weaker bots sometimes slip. Each move takes a slightly different time, so it feels
 like a person rather than a machine.
 
-### Against a friend on the same network
+### Against a friend
 
-Race a friend on **exactly the same board**. Both devices only need to be on the same Wi-Fi or
-phone hotspot. There is no account, no login and no game server: the two browsers connect
-directly (WebRTC) and you swap two short codes once, for example by AirDrop or a chat message.
+Race a friend on **exactly the same board**, on any network: Wi-Fi, mobile data, school or home.
+One of you creates a room and tells the other a **5-letter code**. No account and no login.
 
 <table>
   <tr>
@@ -269,50 +269,110 @@ directly (WebRTC) and you swap two short codes once, for example by AirDrop or a
 <details>
 <summary><b>How to start a match</b></summary>
 
-1. **Host:** click **1v1**, then **Host a game**. Send the invite code (it starts with `MS1.`) to
-   your opponent.
-2. **Guest:** click **1v1**, then **Join a game**, paste the invite code and click **Create reply
-   code**. Send the reply code back.
-3. **Host:** paste the reply code and click **Connect**. Both screens now say **Connected**.
+1. **Host:** click **1v1**, then **Create a room**. A code such as `K7XPM` appears.
+2. Tell your friend the code (say it, or use **Copy** / **Share**).
+3. **Guest:** click **1v1**, then **Join a room**, type the code and press **Join**. Upper or
+   lower case doesn't matter. Both screens now say **Connected**.
 4. **Host:** choose the rules and click **Start round**. After a 3-2-1 countdown the race begins.
 5. Afterwards the host can click **Play again** (or **Rules** to change them), and the guest can
-   click **Ask for rematch**. **Leave** ends the match.
+   click **Ask for rematch**. **Leave** ends the match for both.
 
-The codes are needed once per match, rematches reuse the connection. A code contains your
-device's local network address, so only send it to your opponent.
-
-</details>
-
-<details>
-<summary><b>Trying it on two devices</b></summary>
-
-1. On the laptop run `npm run start:lan` (allow `node` through the firewall if macOS asks).
-2. Find the laptop's IP address, for example with `ipconfig getifaddr en0` on macOS.
-3. Open `http://localhost:4200` on the laptop and `http://<laptop IP>:4200` on the other device.
-4. Follow "How to start a match". On plain `http` the browser blocks the **Copy** and **Share**
-   buttons, so select the code by hand. On the deployed `https` site they work.
-
-A **phone hotspot** is the most reliable network. Some school, hotel and public Wi-Fi networks
-block devices from talking to each other ("client isolation"), and 1v1 cannot work there.
-
-If the page will not load from the other device, you can also run the project on both devices
-(`npm start` on each) and only swap the two codes.
+A room lasts as long as both players stay. Rematches use the same room. Codes never contain
+`0`, `O`, `1`, `I` or `L`, so they can't be misread.
 
 </details>
 
 <details>
 <summary><b>Troubleshooting</b></summary>
 
-| Problem                                          | What to try                                                                                                                              |
-| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| "Could not connect" after pasting the reply code | The network probably blocks device-to-device traffic. Use a phone hotspot, and turn off any VPN on both devices.                         |
-| "This code is incomplete or not an invite code"  | Part of the code was lost while copying. Copy the whole code (about 600 characters).                                                     |
-| "No address inside your local network"           | The code points outside your network, so it was refused on purpose. Make a fresh code on the same Wi-Fi.                                 |
-| The other device cannot open `http://<IP>:4200`  | Use `npm run start:lan` (not `npm start`), check the IP, and allow `node` in the firewall.                                               |
-| It never connects on a work or school laptop     | Managed laptops often run a company firewall that blocks connections between devices. Try two personal devices, or play against the bot. |
-| Codes stop working                               | A code belongs to one attempt. After cancelling or reloading, start again with a new invite.                                             |
+| Message                                   | What it means                                                                                                |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| "There is no room with this code"         | A typo, or the host left. Check the code, or let the host create a new room.                                 |
+| "This room already has two players"       | Someone else joined first. The host can create a new room.                                                   |
+| "Could not reach the game server"         | No internet, or a network that blocks it. On the published site it can also mean the daily limit is used up. |
+| "Online play has reached its daily limit" | The free Cloudflare plan is used up for today. It resets at 00:00 UTC. Play the bot meanwhile.               |
+| "Nobody joined for 15 minutes"            | The waiting room closes by itself. Create a new one.                                                         |
+| Only "Play against a bot" is shown        | The relay address is not filled in yet. See [Online 1v1 server](#online-1v1-server-cloudflare).              |
 
 </details>
+
+## Online 1v1 server (Cloudflare)
+
+Two browsers can't find each other on the internet by themselves, so a tiny **relay** passes
+the messages between them. It lives in [`relay/`](relay) (about 150 lines) and runs on
+**Cloudflare Workers** with **Durable Objects**: one small instance per room, which Cloudflare
+starts close to the first player. The relay knows nothing about Minesweeper; all game logic
+stays in the browsers.
+
+```
+Player A  ──WebSocket──►  room K7XPM (Cloudflare)  ◄──WebSocket──  Player B
+```
+
+### Setting it up (once, about 10 minutes)
+
+You need a free Cloudflare account; no credit card.
+
+1. **Create an account** at [dash.cloudflare.com/sign-up](https://dash.cloudflare.com/sign-up)
+   and confirm your email.
+2. **Pick your workers.dev subdomain:** in the dashboard open **Workers & Pages**. The first time,
+   Cloudflare asks for a subdomain (for example `noah`). Your relay will be at
+   `minesweeper-relay.<subdomain>.workers.dev`.
+3. **Allow your website:** in [`relay/wrangler.jsonc`](relay/wrangler.jsonc), add your Netlify
+   address to `ALLOWED_ORIGINS`, separated by a comma:
+   ```jsonc
+   "ALLOWED_ORIGINS": "http://localhost:4200,https://your-site.netlify.app"
+   ```
+   Add your own domain too if you have one. Other websites can't use your relay.
+4. **Log in and deploy** from a terminal (Wrangler is Cloudflare's command-line tool; `npx`
+   downloads it, nothing is added to the project):
+   ```bash
+   cd relay
+   npx wrangler@4 login     # opens the browser: click Allow
+   npx wrangler@4 deploy    # prints https://minesweeper-relay.<subdomain>.workers.dev
+   ```
+5. **Tell the game where the relay is**, with `wss://` instead of `https://`:
+   - [`src/environments/environment.ts`](src/environments/environment.ts):
+     `relayUrl: 'wss://minesweeper-relay.<subdomain>.workers.dev'`
+   - [`netlify.toml`](netlify.toml): replace `YOUR-SUBDOMAIN` in `connect-src` (otherwise the
+     browser blocks the connection).
+6. **Commit and push.** After Netlify has deployed, open the site on two devices and play.
+
+After changing `ALLOWED_ORIGINS` or anything in `relay/src`, run `npx wrangler@4 deploy` again.
+**Logs and usage:** dashboard → **Workers & Pages** → `minesweeper-relay` → Metrics / Logs.
+
+### Trying it locally
+
+Run the relay and the game side by side; `npm start` connects to the local relay
+automatically (see [`environment.development.ts`](src/environments/environment.development.ts)):
+
+```bash
+cd relay && npx wrangler@4 dev    # terminal 1: the relay on http://localhost:8787
+npm start                         # terminal 2: the game on http://localhost:4200
+```
+
+Open `http://localhost:4200` in two browser windows, create a room in one and join in the other.
+No Cloudflare account is needed for this.
+
+### What it costs
+
+Free for a school project, and cheap even if it gets popular. On the free plan a round uses
+about 7 (Beginner) to 30 (Expert) of the 100,000 requests per day, so roughly **5,000 to 15,000
+rounds per day** fit. When the limit is reached, new rooms fail until 00:00 UTC; nothing is ever
+billed on the free plan. The paid plan starts at $5 per month.
+
+It stays this cheap because of three choices:
+
+- The relay uses the **WebSocket Hibernation API**: between messages a room sleeps and costs
+  nothing. It has no timers.
+- The game sends its progress **at most twice a second**, not after every click.
+- Keep-alive pings are answered by Cloudflare itself (free) without waking the room.
+
+### Protection against misuse
+
+- Only the websites in `ALLOWED_ORIGINS` may connect from a browser.
+- A room holds at most two players; room codes are random and unpredictable.
+- Messages over 10,000 characters, or more than 60 in 10 seconds, close the connection.
+- Each browser still checks every message from the opponent before using it.
 
 ## Project structure
 
@@ -334,7 +394,7 @@ src/
 │   │   ├── best-times.service.ts, settings.service.ts, appearance.service.ts
 │   │   ├── match.service.ts     the 1v1 round: countdown, race, result, rematch
 │   │   ├── match-transport.ts   what an opponent must offer (a person or the bot)
-│   │   ├── connection.service.ts, signaling.ts   a person over the network
+│   │   ├── connection.service.ts, room-code.ts   a person online, through the relay
 │   │   ├── bot.ts, bot-opponent.ts               the bot: its moves, and playing in real time
 │   │   └── image-resize.ts      shrinks uploaded pictures
 │   └── components/        Display only: they show state and emit events
@@ -344,7 +404,9 @@ src/
 ├── _board-themes.scss     the six colour themes (light and dark)
 ├── _dialog.scss           shared look of the dialogs
 └── styles.scss            design tokens, dark mode, shared controls
+├── environments/          where the 1v1 relay is (published site and npm start)
 public/early-theme.js      applies your saved look before the first paint (no flash)
+relay/                     the 1v1 relay on Cloudflare (Worker + Durable Object)
 netlify.toml               deployment settings and security headers
 ```
 
@@ -366,8 +428,9 @@ netlify.toml               deployment settings and security headers
   interface (`MatchTransport`). A person's device and the bot both implement it and send the same
   messages, so countdown, progress, results and rematches work identically. The bot's moves come
   from pure functions in `bot.ts` (choose a move, apply it, how long it takes).
-- **1v1 against a person** uses a WebRTC data channel. The two codes are the connection descriptions, compressed
-  and written as text. Messages between the players are plain JSON and are checked before use.
+- **1v1 against a person** goes through the relay over a WebSocket. The relay only passes
+  messages on; both browsers run the match logic. Messages are plain JSON and are checked before
+  use.
   `decideOutcome` is a pure function that both devices run on the same two results.
 - **Looks are CSS variables.** Each theme is a set of colour tokens in `_board-themes.scss`.
   Your pictures are stored as data URLs and handed to the CSS through variables.
@@ -383,8 +446,8 @@ runs the unit tests with Vitest (add `-- --watch=false` for a single run). They 
 of the game (mine placement, first-click safety, neighbour counts, flood fill, flagging, chording,
 win and lose), the solver and hints, the timer and best times, settings and key rebinding, themes
 and pictures, the cell icons, the bot (logic-only solving, guessing, slips, speeds, real-time play), and
-the 1v1 pieces (codes, message checks, who wins, the match flow
-with a fake connection).
+the 1v1 pieces (room codes, the connection with a fake WebSocket, message checks, who wins, the
+match flow with a fake connection).
 
 [GitHub Actions](.github/workflows/ci.yml) runs the tests, a production build and `npm audit`
 on every pull request.
@@ -410,15 +473,16 @@ What the config does:
   build and `npm audit` on every pull request. Dependabot opens update pull requests weekly.
 
 To try the production build locally: `npm run build`, then serve `dist/minesweeper/browser`.
-On the deployed (https) site the Copy and Share buttons for the 1v1 invite codes work too.
+For online 1v1, also set up the relay: [Online 1v1 server](#online-1v1-server-cloudflare).
 
 ## Security notes
 
-The game has no server, no accounts and makes no network requests, so there is little to attack.
-The few places that take outside data are checked:
+The game has no accounts and talks to only one server, the 1v1 relay, so there is little to
+attack. The few places that take outside data are checked:
 
-- **1v1 codes** are limited in size, and only addresses inside the local network are accepted.
-  A crafted code cannot make the browser contact anything on the internet.
+- **The relay** only accepts the game's own website, two players per room, and small messages
+  at a normal pace (see [Protection against misuse](#protection-against-misuse)). The page's
+  Content-Security-Policy allows no other server.
 - **1v1 messages** from the opponent must be whole numbers in a sane range and fit the board; the
   opponent cannot crash the game with bad positions. A modified browser can still lie about its
   time, which is fine for playing with friends.

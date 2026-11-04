@@ -1,0 +1,21 @@
+// Cloudflare settings for the 1v1 relay. Deploy with: npx wrangler@4 deploy (from this folder)
+{
+  "$schema": "https://unpkg.com/wrangler@4/config-schema.json",
+  "name": "minesweeper-relay",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+
+  // One Durable Object per room. The free plan only allows SQLite-backed ones.
+  "durable_objects": {
+    "bindings": [{ "name": "ROOMS", "class_name": "MatchRoom" }],
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["MatchRoom"] }],
+
+  "vars": {
+    // Websites that may connect, separated by commas. Add your Netlify address here.
+    "ALLOWED_ORIGINS": "http://localhost:4200",
+  },
+
+  // Logs in the Cloudflare dashboard (Workers → minesweeper-relay → Logs).
+  "observability": { "enabled": true },
+}

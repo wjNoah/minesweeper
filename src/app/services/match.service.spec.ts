@@ -119,6 +119,31 @@ describe('MatchService', () => {
     expect(match.outcome()).toBe('lost');
   });
 
+  it('sends progress at most twice a second, and the last update always arrives', () => {
+    setUp('guest');
+    connection.deliver({
+      type: 'start',
+      round: 1,
+      rules: { preset: 'beginner', noGuess: false, mineRule: 'defeat', penaltySeconds: 10 },
+      mines: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+      start: { row: 8, col: 8 },
+    });
+    vi.advanceTimersByTime(3000);
+    TestBed.tick();
+    const before = sentOfType('progress').length;
+
+    // Five quick moves within a quarter of a second.
+    for (let col = 0; col < 5; col++) {
+      game.toggleFlag(0, col);
+      TestBed.tick();
+      vi.advanceTimersByTime(50);
+    }
+    expect(sentOfType('progress').length).toBe(before);
+
+    vi.advanceTimersByTime(500);
+    expect(sentOfType('progress').length).toBe(before + 1);
+  });
+
   it('guest asks for a rematch instead of starting', () => {
     setUp('guest');
     match.startRound();
