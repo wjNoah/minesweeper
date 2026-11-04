@@ -32,8 +32,10 @@ export class MatchDialog {
     { value: 'penalty', label: 'Time penalty' },
   ];
 
-  /** Guest chose "Join" and is about to paste the invite code. */
+  /** Guest chose "Join a room" and is typing the code. */
   protected readonly joining = signal(false);
+  /** Kept while connecting, so a mistyped code can be fixed instead of typed again. */
+  protected readonly codeDraft = signal('');
   protected readonly copied = signal(false);
   protected readonly canShare = typeof navigator.share === 'function';
   protected readonly botLevels = BOT_LEVEL_IDS;
@@ -42,16 +44,26 @@ export class MatchDialog {
   protected readonly view = computed(() =>
     this.match.isBot() ? 'connected' : this.connection.state(),
   );
-  /** Everything after choosing Host or Join can step back to that choice. */
+  /** Screen readers read "K7XPM" as a word; "K 7 X P M" is read letter by letter. */
+  protected readonly spelledCode = computed(
+    () => `Room code ${[...this.connection.roomCode()].join(' ')}`,
+  );
+  /** Everything after choosing Create or Join can step back to that choice. */
   protected readonly canGoBack = computed(
-    () =>
-      this.joining() || ['preparing', 'waiting', 'connecting'].includes(this.connection.state()),
+    () => this.joining() || ['waiting', 'connecting'].includes(this.connection.state()),
   );
 
   constructor() {
     // The guest's dialog closes by itself when the host starts the round.
     effect(() => {
       if (this.match.phase() === 'countdown') this.close();
+    });
+    // Once in a room, the join form is done: after the match the dialog starts fresh.
+    effect(() => {
+      if (this.connection.state() === 'connected') {
+        this.joining.set(false);
+        this.codeDraft.set('');
+      }
     });
   }
 
@@ -70,7 +82,7 @@ export class MatchDialog {
 
   protected host(): void {
     this.joining.set(false);
-    void this.connection.host();
+    this.connection.host();
   }
 
   protected playBot(): void {
@@ -83,11 +95,7 @@ export class MatchDialog {
   }
 
   protected join(code: string): void {
-    void this.connection.join(code);
-  }
-
-  protected acceptReply(code: string): void {
-    void this.connection.acceptReply(code);
+    this.connection.join(code);
   }
 
   protected backToStart(): void {
@@ -95,19 +103,19 @@ export class MatchDialog {
     this.connection.close();
   }
 
-  protected async copy(code: string, field: HTMLTextAreaElement): Promise<void> {
+  protected async copy(code: string): Promise<void> {
     try {
       await navigator.clipboard.writeText(code);
       this.copied.set(true);
       setTimeout(() => this.copied.set(false), 2000);
     } catch {
-      // The clipboard API needs https. On http, select the text so it can be copied by hand.
-      field.select();
+      // The clipboard needs https. The code is short, so it can still be read off the screen.
     }
   }
 
   protected share(code: string): void {
-    navigator.share({ text: code }).catch(() => undefined);
+    const text = `Join my Minesweeper 1v1 room with the code ${code}`;
+    navigator.share({ text, url: location.origin }).catch(() => undefined);
   }
 
   protected setNoGuess(event: Event): void {

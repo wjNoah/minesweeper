@@ -20,9 +20,9 @@
     #  - script-src 'self': no inline scripts (the start-up script is public/early-theme.js).
     #  - style-src 'unsafe-inline': Angular adds each component's CSS as an inline <style> tag.
     #  - img-src data: : the user's own pictures are stored as data URLs.
-    #  - connect-src 'self': the game makes no network requests. (The 1v1 WebRTC connection
-    #    is not controlled by CSP; see docs in README.)
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; worker-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+    #  - connect-src: the only server the game talks to is the 1v1 relay. Replace
+    #    YOUR-SUBDOMAIN with your workers.dev subdomain (README: "Online 1v1 server").
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' wss://minesweeper-relay.YOUR-SUBDOMAIN.workers.dev; object-src 'none'; worker-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
     # Browsers must not guess file types (stops uploaded or odd files being run as scripts).
     X-Content-Type-Options = "nosniff"
     # Nobody may show the game inside another page (clickjacking). Old browsers use this header,

@@ -2,6 +2,11 @@
   padding-block: 1.25rem;
 }
 
+// Room for the error above the room code field.
+.body .error {
+  margin-bottom: 1rem;
+}
+
 .intro {
   margin: 0 0 1.25rem;
   color: var(--ink-muted);
@@ -46,39 +51,46 @@
   }
 }
 
-.steps {
-  display: grid;
-  gap: 1.25rem;
-  margin: 0 0 1rem;
-  padding-left: 1.25rem;
-
-  li::marker {
-    color: var(--ink-muted);
-    font-weight: 600;
-  }
+.room-code {
+  margin: 0.5rem 0 0.75rem;
+  font:
+    700 2.5rem / 1.1 ui-monospace,
+    monospace;
+  letter-spacing: 0.2em;
+  user-select: all;
 }
 
-.code {
-  display: block;
-  width: 100%;
+.join-row {
+  display: flex;
+  gap: 0.5rem;
   margin-top: 0.5rem;
-  padding: 0.6rem 0.75rem;
+}
+
+.code-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
   border: 1px solid var(--line);
   border-radius: 9px;
   background: var(--paper);
   color: var(--ink);
   font:
-    0.75rem / 1.4 ui-monospace,
+    600 1.25rem ui-monospace,
     monospace;
-  word-break: break-all;
-  resize: vertical;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+
+  &::placeholder {
+    color: var(--ink-muted);
+    opacity: 0.5;
+  }
 }
 
 .code-actions {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 0.5rem;
 }
 
 .status {
