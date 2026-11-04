@@ -15,6 +15,22 @@
       <button
         type="button"
         class="icon-button"
+        aria-label="Customize board and background"
+        aria-haspopup="dialog"
+        (click)="customizeDialog.open()"
+      >
+        <svg viewBox="0 0 20 20" aria-hidden="true">
+          <path
+            d="M10 2.5a7.5 7.5 0 1 0 0 15c.9 0 1.5-.6 1.5-1.4 0-.9-.8-1.2-.8-2.1 0-.8.6-1.4 1.5-1.4h1.7a3.6 3.6 0 0 0 3.6-3.6c0-3.6-3.4-6.5-7.5-6.5z"
+          />
+          <circle cx="6.3" cy="9.3" r="1" />
+          <circle cx="8.6" cy="6" r="1" />
+          <circle cx="12.4" cy="6.3" r="1" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="icon-button"
         [attr.aria-label]="
           settings.effectiveTheme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'
         "
@@ -59,3 +75,4 @@
 
 <app-settings-dialog #settingsDialog />
 <app-match-dialog #matchDialog />
+<app-customize-dialog #customizeDialog />

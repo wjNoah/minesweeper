@@ -1,11 +1,13 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Board } from './components/board/board';
 import { ControlsHint } from './components/controls-hint/controls-hint';
+import { CustomizeDialog } from './components/customize-dialog/customize-dialog';
 import { DifficultyPicker } from './components/difficulty-picker/difficulty-picker';
 import { GameHeader } from './components/game-header/game-header';
 import { MatchBar } from './components/match-bar/match-bar';
 import { MatchDialog } from './components/match-dialog/match-dialog';
 import { SettingsDialog } from './components/settings-dialog/settings-dialog';
+import { AppearanceService } from './services/appearance.service';
 import { SettingsService } from './services/settings.service';
 
 @Component({
@@ -18,6 +20,7 @@ import { SettingsService } from './services/settings.service';
     MatchBar,
     MatchDialog,
     SettingsDialog,
+    CustomizeDialog
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
@@ -25,4 +28,6 @@ import { SettingsService } from './services/settings.service';
 })
 export class App {
   protected readonly settings = inject(SettingsService);
+  // Created here so the saved board theme and pictures apply right at startup.
+  protected readonly appearance = inject(AppearanceService);
 }

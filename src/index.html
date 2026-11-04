@@ -7,7 +7,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <script>
-    // Apply the saved theme and cell size before the first paint, so the page doesn't flash.
+    // Apply the saved theme, cell size, board theme and background before the first paint,
+    // so the page doesn't flash.
     try {
       const settings = JSON.parse(localStorage.getItem('minesweeper.settings') || '{}');
       if (settings.theme === 'light' || settings.theme === 'dark') {
@@ -15,6 +16,15 @@
       }
       if ([1, 1.25, 1.5].includes(settings.cellScale)) {
         document.documentElement.style.setProperty('--cell-scale', settings.cellScale);
+      }
+      const appearance = JSON.parse(localStorage.getItem('minesweeper.appearance') || '{}');
+      if (typeof appearance.boardTheme === 'string') {
+        document.documentElement.dataset.boardTheme = appearance.boardTheme;
+      }
+      const pageImage = localStorage.getItem('minesweeper.pageImage');
+      if (pageImage && pageImage.startsWith('data:image/')) {
+        document.documentElement.style.setProperty('--page-image', 'url("' + pageImage + '")');
+        document.documentElement.dataset.pageImage = 'on';
       }
     } catch {}
   </script>

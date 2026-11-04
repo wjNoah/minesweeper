@@ -21,6 +21,8 @@ const HINT_LABELS: Record<HintKind, string> = {
   templateUrl: './cell.html',
   styleUrl: './cell.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // Position for the "whole board" block picture.
+  host: { '[style.--row]': 'cell().row', '[style.--col]': 'cell().col' },
 })
 export class Cell {
   readonly cell = input.required<CellState>();
