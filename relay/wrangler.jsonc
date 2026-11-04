@@ -13,7 +13,7 @@
 
   "vars": {
     // Websites that may connect, separated by commas. Add your Netlify address here.
-    "ALLOWED_ORIGINS": "http://localhost:4200",
+    "ALLOWED_ORIGINS": "http://localhost:4200,https://sweepduel.netlify.app,https://minesweeperduel.com,https://www.minesweeperduel.com",
   },
 
   // Logs in the Cloudflare dashboard (Workers → minesweeper-relay → Logs).
