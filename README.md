@@ -2,7 +2,7 @@
 
 <p align="center">
   A modern Minesweeper for the browser: no-guessing boards, a hint solver, six colour themes,
-  your own pictures, full keyboard play and a 1v1 race for two devices on the same network.
+  your own pictures, full keyboard play and a 1v1 race against a bot or a friend.
   <br>
   No account, no server, nothing to install for players.
 </p>
@@ -31,7 +31,7 @@
 - [Game modes](#game-modes)
 - [Customize](#customize)
 - [On your phone](#on-your-phone)
-- [1v1 on the same network](#1v1-on-the-same-network)
+- [1v1: a bot or a friend](#1v1-a-bot-or-a-friend)
 - [Project structure](#project-structure)
 - [How it works](#how-it-works)
 - [Testing](#testing)
@@ -48,7 +48,8 @@
 - **No-guessing mode.** Every board can be solved with logic alone, checked by a real solver, so
   you never face a coin flip.
 - **Hints.** One button shows a move that logic proves is right, or a flag that is wrong.
-- **1v1 race.** Two devices on the same Wi-Fi or hotspot play the same board. No login, no
+- **1v1 race.** Race a **bot** on your own device (three strengths, no network needed), or a
+  **friend** on the same Wi-Fi or hotspot. Both play exactly the same board. No login, no
   server. You can choose "lose on a mine" or a time penalty.
 - **Make it yours.** Six colour themes (each in light and dark), your own background picture,
   your own block picture, and your own flag and mine.
@@ -199,7 +200,40 @@ shrinking the cells. A long press flags a cell, with a short vibration if your p
   </tr>
 </table>
 
-## 1v1 on the same network
+## 1v1: a bot or a friend
+
+Click **1v1** and race on **exactly the same board**, against the computer or another person.
+The rules are the same for both: the first to clear the board wins (or, with the time penalty,
+the lowest time).
+
+### Against a bot
+
+Pick **Play against a bot**, choose a strength and the rules, and start. The bot runs on your own
+device, so this works anywhere, even offline.
+
+<table>
+  <tr>
+    <td width="45%"><img alt="The bot lobby: strength Easy, Medium or Hard, and the round rules" src="screenshots/bot-lobby.png"></td>
+    <td width="55%"><img alt="A race against the bot: your progress and the bot's progress side by side" src="screenshots/bot-race.png"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>Choose how strong the bot is.</b></sub></td>
+    <td align="center"><sub><b>The race:</b> the bot plays its own copy of the board in real time.</sub></td>
+  </tr>
+</table>
+
+| Strength | Plays like…      | Typical time (Beginner / Intermediate / Expert) | Mistakes                   |
+| -------- | ---------------- | ----------------------------------------------- | -------------------------- |
+| Easy     | a casual player  | about 40 s / 3 min / 8 min                      | now and then clicks a mine |
+| Medium   | a regular player | about 20 s / 1.7 min / 4.5 min                  | rarely slips               |
+| Hard     | a strong player  | about 12 s / 50 s / 2.2 min                     | never careless             |
+
+The bot is not a cheat: it uses the **same solver as the Hint button**, so it only knows what is
+visible on its own board. It opens proven cells, flags proven mines, has to guess when nothing can
+be proven, and weaker bots sometimes slip. Each move takes a slightly different time, so it feels
+like a person rather than a machine.
+
+### Against a friend on the same network
 
 Race a friend on **exactly the same board**. Both devices only need to be on the same Wi-Fi or
 phone hotspot. There is no account, no login and no game server: the two browsers connect
@@ -269,13 +303,14 @@ If the page will not load from the other device, you can also run the project on
 <details>
 <summary><b>Troubleshooting</b></summary>
 
-| Problem                                          | What to try                                                                                                      |
-| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| "Could not connect" after pasting the reply code | The network probably blocks device-to-device traffic. Use a phone hotspot, and turn off any VPN on both devices. |
-| "This code is incomplete or not an invite code"  | Part of the code was lost while copying. Copy the whole code (about 600 characters).                             |
-| "No address inside your local network"           | The code points outside your network, so it was refused on purpose. Make a fresh code on the same Wi-Fi.         |
-| The other device cannot open `http://<IP>:4200`  | Use `npm run start:lan` (not `npm start`), check the IP, and allow `node` in the firewall.                       |
-| Codes stop working                               | A code belongs to one attempt. After cancelling or reloading, start again with a new invite.                     |
+| Problem                                          | What to try                                                                                                                              |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| "Could not connect" after pasting the reply code | The network probably blocks device-to-device traffic. Use a phone hotspot, and turn off any VPN on both devices.                         |
+| "This code is incomplete or not an invite code"  | Part of the code was lost while copying. Copy the whole code (about 600 characters).                                                     |
+| "No address inside your local network"           | The code points outside your network, so it was refused on purpose. Make a fresh code on the same Wi-Fi.                                 |
+| The other device cannot open `http://<IP>:4200`  | Use `npm run start:lan` (not `npm start`), check the IP, and allow `node` in the firewall.                                               |
+| It never connects on a work or school laptop     | Managed laptops often run a company firewall that blocks connections between devices. Try two personal devices, or play against the bot. |
+| Codes stop working                               | A code belongs to one attempt. After cancelling or reloading, start again with a new invite.                                             |
 
 </details>
 
@@ -290,13 +325,17 @@ src/
 │   │   ├── settings.model.ts    settings, key bindings and their validation
 │   │   ├── appearance.model.ts  colour theme list
 │   │   ├── match.model.ts       1v1 rules, messages, who wins, message validation
+│   │   ├── bot.model.ts         the three bot strengths
 │   │   └── navigation.ts        arrow keys and W A S D to cursor steps
 │   ├── services/          State (signals) and logic
 │   │   ├── board-logic.ts       pure board functions: mines, flood fill, flag, chord, win/lose
 │   │   ├── solver.ts            no-guessing boards and hints
 │   │   ├── game.service.ts      the game state, timer and rules in one place
 │   │   ├── best-times.service.ts, settings.service.ts, appearance.service.ts
-│   │   ├── connection.service.ts, signaling.ts, match.service.ts   the 1v1 mode
+│   │   ├── match.service.ts     the 1v1 round: countdown, race, result, rematch
+│   │   ├── match-transport.ts   what an opponent must offer (a person or the bot)
+│   │   ├── connection.service.ts, signaling.ts   a person over the network
+│   │   ├── bot.ts, bot-opponent.ts               the bot: its moves, and playing in real time
 │   │   └── image-resize.ts      shrinks uploaded pictures
 │   └── components/        Display only: they show state and emit events
 │       ├── board, cell, game-header, difficulty-picker, controls-hint
@@ -323,7 +362,11 @@ netlify.toml               deployment settings and security headers
   - **Chording** opens all neighbours of a number once its flags match the number.
 - **The solver** (`solver.ts`) powers both no-guessing boards (generate, solve, retry) and hints
   (find the next provable move). It is a few small rules, not a search.
-- **1v1** uses a WebRTC data channel. The two codes are the connection descriptions, compressed
+- **The bot is just another opponent.** The match service talks to its opponent through a small
+  interface (`MatchTransport`). A person's device and the bot both implement it and send the same
+  messages, so countdown, progress, results and rematches work identically. The bot's moves come
+  from pure functions in `bot.ts` (choose a move, apply it, how long it takes).
+- **1v1 against a person** uses a WebRTC data channel. The two codes are the connection descriptions, compressed
   and written as text. Messages between the players are plain JSON and are checked before use.
   `decideOutcome` is a pure function that both devices run on the same two results.
 - **Looks are CSS variables.** Each theme is a set of colour tokens in `_board-themes.scss`.
@@ -339,7 +382,8 @@ npm test
 runs the unit tests with Vitest (add `-- --watch=false` for a single run). They cover the rules
 of the game (mine placement, first-click safety, neighbour counts, flood fill, flagging, chording,
 win and lose), the solver and hints, the timer and best times, settings and key rebinding, themes
-and pictures, the cell icons, and the 1v1 pieces (codes, message checks, who wins, the match flow
+and pictures, the cell icons, the bot (logic-only solving, guessing, slips, speeds, real-time play), and
+the 1v1 pieces (codes, message checks, who wins, the match flow
 with a fake connection).
 
 [GitHub Actions](.github/workflows/ci.yml) runs the tests, a production build and `npm audit`

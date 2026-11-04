@@ -14,6 +14,12 @@
   gap: 0.75rem;
 }
 
+// Below the two network choices, across the full width: it needs no network.
+.bot-choice {
+  grid-column: 1 / -1;
+  min-height: 0;
+}
+
 .choice-button {
   display: flex;
   flex-direction: column;

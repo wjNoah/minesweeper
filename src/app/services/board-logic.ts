@@ -78,6 +78,15 @@ export function placeMines(
   return computeAdjacentCounts(withMines);
 }
 
+/** A board with mines at the given positions (row * cols + col), with neighbour counts. */
+export function gridWithMines(rows: number, cols: number, mines: readonly number[]): Grid {
+  const mineSet = new Set(mines);
+  const grid = createEmptyBoard(rows, cols).map((line) =>
+    line.map((cell) => ({ ...cell, hasMine: mineSet.has(cell.row * cols + cell.col) })),
+  );
+  return computeAdjacentCounts(grid);
+}
+
 export function computeAdjacentCounts(grid: Grid): Grid {
   return grid.map((line) =>
     line.map((cell) => ({

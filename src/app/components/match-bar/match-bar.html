@@ -15,7 +15,7 @@
         <div class="result">
           <p class="headline" [attr.data-outcome]="match.outcome()">{{ headline() }}</p>
           <p class="detail">
-            You: {{ describe(match.myFinish(), true) }} · Opponent:
+            You: {{ describe(match.myFinish(), true) }} · {{ opponentName() }}:
             {{ describe(match.opponentFinish(), false) }}
           </p>
         </div>
@@ -39,11 +39,11 @@
         <span class="extra">{{ minesLabel(game.minesHit()) }}</span>
       </div>
       <div class="player">
-        <span class="name">Opponent</span>
+        <span class="name">{{ opponentName() }}</span>
         <div
           class="track"
           role="progressbar"
-          aria-label="Opponent progress"
+          [attr.aria-label]="opponentName() + ' progress'"
           [attr.aria-valuenow]="opponentPercent()"
           aria-valuemin="0"
           aria-valuemax="100"

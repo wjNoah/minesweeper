@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { MatchMessage, parseMatchMessage } from '../models/match.model';
+import { MatchTransport } from './match-transport';
 import { decodeDescription, encodeDescription, InvalidCodeError } from './signaling';
 
 /**
@@ -23,7 +24,7 @@ const NETWORK_ERROR =
  * must be on the same Wi-Fi or hotspot.
  */
 @Injectable({ providedIn: 'root' })
-export class ConnectionService {
+export class ConnectionService implements MatchTransport {
   readonly state = signal<ConnectionState>('idle');
   readonly role = signal<Role | null>(null);
   /** The code to send to the other player: an invite (host) or a reply (guest). */

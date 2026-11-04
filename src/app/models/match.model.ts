@@ -18,6 +18,9 @@ export const DEFAULT_RULES: MatchRules = {
   penaltySeconds: 10,
 };
 
+/** The 3-2-1 countdown before a round; the race clock starts after it. */
+export const COUNTDOWN_SECONDS = 3;
+
 export const PENALTY_OPTIONS: readonly PenaltySeconds[] = [5, 10, 20, 30];
 
 export interface Position {
