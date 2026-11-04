@@ -15,12 +15,12 @@ import { SettingsService } from './services/settings.service';
   imports: [
     Board,
     ControlsHint,
+    CustomizeDialog,
     DifficultyPicker,
     GameHeader,
     MatchBar,
     MatchDialog,
     SettingsDialog,
-    CustomizeDialog
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',

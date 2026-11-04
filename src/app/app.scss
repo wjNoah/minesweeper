@@ -10,7 +10,8 @@
 .top,
 app-game-header,
 app-controls-hint {
-  width: min(100%, 42rem);
+  // Wide enough for the title, the difficulty tabs and four tool buttons in one row.
+  width: min(100%, 46rem);
 }
 
 // Desktop: title, difficulty, tools in one row. Phone: title and tools, then difficulty.
@@ -87,7 +88,8 @@ h1 {
 // the panel, which measured more than twice as slow.
 :host-context([data-page-image]) .app {
   width: fit-content;
-  min-width: min(100% - 2rem, 46rem);
+  // The content column (46rem) plus this panel's side padding (2 × 1.25rem).
+  min-width: min(100% - 2rem, 48.5rem);
   max-width: calc(100% - 2rem);
   margin: 1.5rem auto;
   border: 1px solid var(--line);
@@ -111,7 +113,11 @@ h1 {
     padding-inline: calc(0.25rem - 1px);
     border-radius: 16px;
   }
+}
 
+// Title, difficulty tabs and four tool buttons need about 760px in one row.
+// Narrower windows put the tabs on their own row below the title.
+@media (max-width: 800px) {
   .top {
     grid-template-areas:
       'title tools'

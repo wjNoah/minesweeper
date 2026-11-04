@@ -75,16 +75,6 @@
   margin-top: 0.5rem;
 }
 
-.link {
-  min-height: 40px;
-  padding: 0 0.5rem;
-  border: 0;
-  background: none;
-  color: var(--ink-muted);
-  font-size: 0.875rem;
-  text-decoration: underline;
-}
-
 .status {
   margin: 1rem 0;
   font-weight: 600;
@@ -109,6 +99,23 @@
 
 section {
   padding-top: 0.5rem;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-left: 0.7rem;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
 }
 
 .foot {

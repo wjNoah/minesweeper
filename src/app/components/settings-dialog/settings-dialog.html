@@ -14,38 +14,6 @@
     </header>
 
     <div class="body">
-      <section aria-labelledby="appearance-title">
-        <h3 id="appearance-title">Appearance</h3>
-        <div class="row choice">
-          <span class="label" id="theme-label">Theme</span>
-          <div class="segmented" role="group" aria-labelledby="theme-label">
-            @for (theme of themes; track theme.value) {
-              <button
-                type="button"
-                [attr.aria-pressed]="settings.settings().theme === theme.value"
-                (click)="setTheme(theme.value)"
-              >
-                {{ theme.label }}
-              </button>
-            }
-          </div>
-        </div>
-        <div class="row choice">
-          <span class="label" id="size-label">Cell size</span>
-          <div class="segmented" role="group" aria-labelledby="size-label">
-            @for (scale of cellScales; track scale.value) {
-              <button
-                type="button"
-                [attr.aria-pressed]="settings.settings().cellScale === scale.value"
-                (click)="setCellScale(scale.value)"
-              >
-                {{ scale.label }}
-              </button>
-            }
-          </div>
-        </div>
-      </section>
-
       <section aria-labelledby="gameplay-title">
         <h3 id="gameplay-title">Gameplay</h3>
         @for (toggle of toggles; track toggle.key) {
@@ -71,8 +39,8 @@
       <section aria-labelledby="keys-title">
         <h3 id="keys-title">Keyboard</h3>
         <p class="hint">
-          Select an action, then press the new key. Arrow keys move and Enter reveals. Keys follow
-          your keyboard layout.
+          Select an action, then press the new key. Arrow keys and W A S D move the cursor, Enter
+          reveals. Other keys follow your keyboard layout.
         </p>
         @for (action of keyActions; track action.id) {
           <div class="row">
@@ -118,7 +86,10 @@
           </button>
         </div>
         <div class="row">
-          <span class="label">All settings</span>
+          <span>
+            <span class="label">Gameplay and keys</span>
+            <span class="hint">The look is reset in Customize.</span>
+          </span>
           <button type="button" class="button" (click)="restoreDefaults()">Restore defaults</button>
         </div>
         <p class="hint" aria-live="polite">{{ statusMessage() }}</p>

@@ -34,6 +34,9 @@ export class Cell {
   readonly highlighted = input(false);
   /** Set when this cell is the current hint. */
   readonly hint = input<HintKind | null>(null);
+  /** Show the user's own flag or mine picture instead of the built-in drawing. */
+  readonly customFlag = input(false);
+  readonly customMine = input(false);
   /** Vibrate when a long press flags the cell (on phones that support it). */
   readonly haptics = input(true);
 

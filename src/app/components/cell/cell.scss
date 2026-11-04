@@ -96,7 +96,23 @@
   }
 }
 
-.wrong-flag .flag {
+// The user's own flag and mine pictures (set in the customize dialog).
+.picture {
+  width: 80%;
+  height: 80%;
+  background: center / contain no-repeat;
+}
+
+.flag-picture {
+  background-image: var(--flag-image);
+}
+
+.mine-picture {
+  background-image: var(--mine-image);
+}
+
+.wrong-flag .flag,
+.wrong-flag .flag-picture {
   opacity: 0.45;
 }
 

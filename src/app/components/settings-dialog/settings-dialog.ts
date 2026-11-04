@@ -8,13 +8,11 @@ import {
   viewChild,
 } from '@angular/core';
 import {
-  CELL_SCALES,
   isBindableKey,
   KEY_ACTIONS,
   KeyAction,
   keyLabel,
   Settings,
-  ThemeSetting,
 } from '../../models/settings.model';
 import { BestTimesService } from '../../services/best-times.service';
 import { SettingsService } from '../../services/settings.service';
@@ -49,12 +47,6 @@ const TOGGLES: readonly { key: ToggleKey; label: string; hint: string }[] = [
   },
 ];
 
-const THEMES: readonly { value: ThemeSetting; label: string }[] = [
-  { value: 'system', label: 'System' },
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
-];
-
 @Component({
   selector: 'app-settings-dialog',
   templateUrl: './settings-dialog.html',
@@ -66,8 +58,6 @@ export class SettingsDialog {
   private readonly bestTimes = inject(BestTimesService);
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
-  protected readonly themes = THEMES;
-  protected readonly cellScales = CELL_SCALES;
   protected readonly toggles = TOGGLES;
   protected readonly keyActions = KEY_ACTIONS;
   protected readonly keyLabel = keyLabel;
@@ -101,14 +91,6 @@ export class SettingsDialog {
   /** A click on the dimmed area outside the panel lands on the dialog element itself. */
   protected onDialogClick(event: MouseEvent): void {
     if (event.target === this.dialog().nativeElement) this.close();
-  }
-
-  protected setTheme(theme: ThemeSetting): void {
-    this.settings.update({ theme });
-  }
-
-  protected setCellScale(cellScale: Settings['cellScale']): void {
-    this.settings.update({ cellScale });
   }
 
   protected setToggle(key: ToggleKey, event: Event): void {

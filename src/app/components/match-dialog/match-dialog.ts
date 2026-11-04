@@ -35,8 +35,10 @@ export class MatchDialog {
   protected readonly joining = signal(false);
   protected readonly copied = signal(false);
   protected readonly canShare = typeof navigator.share === 'function';
-  protected readonly isBusy = computed(() =>
-    ['preparing', 'connecting'].includes(this.connection.state()),
+  /** Everything after choosing Host or Join can step back to that choice. */
+  protected readonly canGoBack = computed(
+    () =>
+      this.joining() || ['preparing', 'waiting', 'connecting'].includes(this.connection.state()),
   );
 
   constructor() {

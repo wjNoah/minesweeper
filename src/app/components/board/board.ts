@@ -8,23 +8,13 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { AppearanceService } from '../../services/appearance.service';
+import { cursorStep, Position } from '../../models/navigation';
 import { getNeighbors } from '../../services/board-logic';
 import { HintKind } from '../../services/solver';
 import { GameService } from '../../services/game.service';
 import { SettingsService } from '../../services/settings.service';
 import { Cell } from '../cell/cell';
-
-interface Position {
-  row: number;
-  col: number;
-}
-
-const ARROW_MOVES: Record<string, Position> = {
-  ArrowUp: { row: -1, col: 0 },
-  ArrowDown: { row: 1, col: 0 },
-  ArrowLeft: { row: 0, col: -1 },
-  ArrowRight: { row: 0, col: 1 },
-};
 
 @Component({
   selector: 'app-board',
@@ -37,6 +27,9 @@ const ARROW_MOVES: Record<string, Position> = {
 export class Board {
   protected readonly game = inject(GameService);
   protected readonly settings = inject(SettingsService);
+  private readonly appearance = inject(AppearanceService);
+  protected readonly customFlag = computed(() => this.appearance.flagImage() !== null);
+  protected readonly customMine = computed(() => this.appearance.mineImage() !== null);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   private readonly cursorPosition = signal<Position>({ row: 0, col: 0 });
@@ -92,6 +85,17 @@ export class Board {
     return this.highlighted().has(`${row},${col}`);
   }
 
+  /** The keyboard cursor follows focus, so moving starts from the cell you just used. */
+  protected onFocusIn(event: FocusEvent): void {
+    const target = event.target instanceof HTMLElement ? event.target : null;
+    const row = Number(target?.dataset['row']);
+    const col = Number(target?.dataset['col']);
+    if (target?.dataset['row'] !== undefined && Number.isInteger(row) && Number.isInteger(col)) {
+      this.cursorPosition.set({ row, col });
+    }
+    this.onFocusChange();
+  }
+
   protected onFocusChange(): void {
     // focusout fires before focus lands on the next cell, so check on the next frame.
     requestAnimationFrame(() =>
@@ -126,6 +130,7 @@ export class Board {
 
     const active = this.hovered() ?? (focusInBoard ? this.cursor() : null);
 
+    const step = cursorStep(event);
     const inMatch = this.game.mode() === 'match';
     if (key === keys.newGame && !inMatch) {
       this.game.newGame();
@@ -139,9 +144,9 @@ export class Board {
       // Stop the browser from also clicking the focused button or scrolling the page.
       event.preventDefault();
       this.game.revealOrChord(active.row, active.col);
-    } else if (event.key in ARROW_MOVES && focusInBoard) {
+    } else if (step && focusInBoard) {
       event.preventDefault();
-      this.moveCursor(ARROW_MOVES[event.key]);
+      this.moveCursor(step);
     } else {
       return;
     }

@@ -45,7 +45,19 @@ export const CELL_SCALES: readonly { value: CellScale; label: string }[] = [
 ];
 
 /** Keys with a fixed meaning (moving, Enter to reveal, leaving the board or a dialog). */
-const RESERVED_KEYS = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'enter', 'tab', 'escape'];
+const RESERVED_KEYS = [
+  'arrowup',
+  'arrowdown',
+  'arrowleft',
+  'arrowright',
+  'w',
+  'a',
+  's',
+  'd',
+  'enter',
+  'tab',
+  'escape',
+];
 
 /** Only single characters (letters, digits, symbols, Space) can be bound. */
 export function isBindableKey(key: string): boolean {

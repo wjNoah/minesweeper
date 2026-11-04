@@ -38,4 +38,24 @@ describe('SettingsService', () => {
     service.reset();
     expect(service.settings().keys.flag).toBe('f');
   });
+
+  it('reset keeps the look, which belongs to the customize dialog', () => {
+    const service = TestBed.inject(SettingsService);
+    service.update({ theme: 'dark', cellScale: 1.5, haptics: false });
+    service.reset();
+
+    expect(service.settings().haptics).toBe(true);
+    expect(service.settings().theme).toBe('dark');
+    expect(service.settings().cellScale).toBe(1.5);
+  });
+
+  it('resetLook restores the theme and cell size only', () => {
+    const service = TestBed.inject(SettingsService);
+    service.update({ theme: 'dark', cellScale: 1.5, haptics: false });
+    service.resetLook();
+
+    expect(service.settings().theme).toBe('system');
+    expect(service.settings().cellScale).toBe(1);
+    expect(service.settings().haptics).toBe(false);
+  });
 });

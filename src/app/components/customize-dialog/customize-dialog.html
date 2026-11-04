@@ -37,6 +37,38 @@
         </div>
       </section>
 
+      <section aria-labelledby="display-title">
+        <h3 id="display-title">Display</h3>
+        <div class="row choice">
+          <span class="label" id="mode-label">Light or dark</span>
+          <div class="segmented" role="group" aria-labelledby="mode-label">
+            @for (mode of modes; track mode.value) {
+              <button
+                type="button"
+                [attr.aria-pressed]="settings.settings().theme === mode.value"
+                (click)="setMode(mode.value)"
+              >
+                {{ mode.label }}
+              </button>
+            }
+          </div>
+        </div>
+        <div class="row choice">
+          <span class="label" id="size-label">Cell size</span>
+          <div class="segmented" role="group" aria-labelledby="size-label">
+            @for (scale of cellScales; track scale.value) {
+              <button
+                type="button"
+                [attr.aria-pressed]="settings.settings().cellScale === scale.value"
+                (click)="setCellScale(scale.value)"
+              >
+                {{ scale.label }}
+              </button>
+            }
+          </div>
+        </div>
+      </section>
+
       <section aria-labelledby="page-picture-title">
         <h3 id="page-picture-title">Background picture</h3>
         <app-picture-picker
@@ -77,11 +109,58 @@
         <p class="hint">Only hidden blocks show it. Opened cells keep the theme color.</p>
       </section>
 
+      <section aria-labelledby="icons-title">
+        <h3 id="icons-title">Flag and mine</h3>
+        <!-- inert: a preview only, not part of the game. Tile picture modes need a board size. -->
+        <div class="icon-preview" inert aria-hidden="true">
+          <app-cell
+            [cell]="previewFlag"
+            [customFlag]="appearance.flagImage() !== null"
+            [customMine]="appearance.mineImage() !== null"
+          />
+          <app-cell
+            [cell]="previewMine"
+            [lost]="true"
+            [customFlag]="appearance.flagImage() !== null"
+            [customMine]="appearance.mineImage() !== null"
+          />
+          <app-cell
+            [cell]="previewExploded"
+            [customFlag]="appearance.flagImage() !== null"
+            [customMine]="appearance.mineImage() !== null"
+          />
+        </div>
+        <span class="label picker-label">Flag</span>
+        <app-picture-picker
+          label="flag picture"
+          emptyLabel="Default"
+          [contain]="true"
+          [image]="appearance.flagImage()"
+          [busy]="busy() === 'flag'"
+          (chosen)="onFileChosen($event, 'flag')"
+          (removed)="appearance.removeFlagImage()"
+        />
+        <span class="label picker-label">Mine</span>
+        <app-picture-picker
+          label="mine picture"
+          emptyLabel="Default"
+          [contain]="true"
+          [image]="appearance.mineImage()"
+          [busy]="busy() === 'mine'"
+          (chosen)="onFileChosen($event, 'mine')"
+          (removed)="appearance.removeMineImage()"
+        />
+        <p class="hint">A picture with a transparent background works best.</p>
+      </section>
+
       <p class="error" aria-live="polite">{{ error() }}</p>
       <p class="hint privacy">Pictures are saved only in this browser and never uploaded.</p>
     </div>
 
     <footer class="foot">
+      <button type="button" class="button" [class.danger]="confirmingReset()" (click)="resetLook()">
+        {{ confirmingReset() ? 'Click again to reset' : 'Reset look' }}
+      </button>
       <button type="button" class="button primary" (click)="close()">Done</button>
     </footer>
   </div>

@@ -59,8 +59,17 @@ export class SettingsService {
     this.update({ theme: this.effectiveTheme() === 'dark' ? 'light' : 'dark' });
   }
 
+  /** Restores gameplay options and keys. The look (theme, cell size) is reset in Customize. */
   reset(): void {
-    this.settings.set(structuredClone(DEFAULT_SETTINGS));
+    this.settings.update(({ theme, cellScale }) => ({
+      ...structuredClone(DEFAULT_SETTINGS),
+      theme,
+      cellScale,
+    }));
+  }
+
+  resetLook(): void {
+    this.update({ theme: DEFAULT_SETTINGS.theme, cellScale: DEFAULT_SETTINGS.cellScale });
   }
 }
 

@@ -88,7 +88,6 @@
           @if (connection.error()) {
             <p class="error">{{ connection.error() }}</p>
           }
-          <button type="button" class="link" (click)="backToStart()">Cancel</button>
         }
 
         @case ('preparing') {
@@ -216,7 +215,6 @@
                   <button type="button" class="button primary" (click)="join(inviteIn.value)">
                     Create reply code
                   </button>
-                  <button type="button" class="link" (click)="joining.set(false)">Back</button>
                 </div>
               </li>
             </ol>
@@ -234,7 +232,14 @@
           <span class="hint">Waiting for the host to start…</span>
         }
       } @else {
-        <span></span>
+        @if (canGoBack()) {
+          <button type="button" class="button back" (click)="backToStart()">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3L5 8l5 5" /></svg>
+            Back
+          </button>
+        } @else {
+          <span></span>
+        }
         <button type="button" class="button" (click)="close()">Close</button>
       }
     </footer>
