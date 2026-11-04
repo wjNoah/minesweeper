@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { isMatchMessage, MatchMessage } from '../models/match.model';
+import { MatchMessage, parseMatchMessage } from '../models/match.model';
 import { decodeDescription, encodeDescription, InvalidCodeError } from './signaling';
 
 /**
@@ -123,13 +123,9 @@ export class ConnectionService {
       if (this.state() === 'connected') this.state.set('closed');
     };
     channel.onmessage = (event: MessageEvent) => {
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(String(event.data));
-      } catch {
-        return;
-      }
-      if (!isMatchMessage(parsed)) return;
+      // The other device is not trusted: wrong, oversized or odd messages are dropped.
+      const parsed = parseMatchMessage(event.data);
+      if (!parsed) return;
       if (parsed.type === 'leave') {
         this.state.set('closed');
         return;

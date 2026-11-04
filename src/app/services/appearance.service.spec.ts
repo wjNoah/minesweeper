@@ -3,6 +3,7 @@ import {
   APPEARANCE_KEY,
   AppearanceService,
   FLAG_IMAGE_KEY,
+  isSafeImage,
   MINE_IMAGE_KEY,
   PAGE_IMAGE_KEY,
   TILE_IMAGE_KEY,
@@ -116,5 +117,23 @@ describe('AppearanceService', () => {
     expect(localStorage.getItem(TILE_IMAGE_KEY)).toBeNull();
     expect(root.dataset['boardTheme']).toBe('classic');
     expect(root.dataset['pageImage']).toBeUndefined();
+  });
+
+  it('only accepts plain base64 png, jpeg and webp pictures', () => {
+    expect(isSafeImage(TINY_IMAGE)).toBe(true);
+    expect(isSafeImage('data:image/jpeg;base64,/9j/4AAQSkZJRg==')).toBe(true);
+    expect(isSafeImage('data:image/svg+xml;base64,PHN2Zz4=')).toBe(false);
+    expect(isSafeImage('data:image/png;base64,AAAA")};body{display:none}/*')).toBe(false);
+    expect(isSafeImage('data:image/png;base64,AAAA AAAA')).toBe(false);
+    expect(isSafeImage('data:image/png,<svg onload=alert(1)>')).toBe(false);
+    expect(isSafeImage('https://example.com/a.png')).toBe(false);
+    expect(isSafeImage('javascript:alert(1)')).toBe(false);
+    expect(isSafeImage(null)).toBe(false);
+    expect(isSafeImage(42)).toBe(false);
+  });
+
+  it('ignores a stored picture that could break out of the CSS url()', () => {
+    localStorage.setItem(PAGE_IMAGE_KEY, 'data:image/png;base64,AAAA")};body{display:none}/*');
+    expect(TestBed.inject(AppearanceService).pageImage()).toBeNull();
   });
 });

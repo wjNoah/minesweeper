@@ -138,10 +138,22 @@ function save(key: string, image: string): void {
   }
 }
 
+/**
+ * Only plain base64 PNG, JPEG or WebP pictures are accepted. The value ends up inside a CSS
+ * url("..."), so anything else (a quote, a space, an SVG) could break out of it. The same
+ * check is repeated in public/early-theme.js, which runs before the page is drawn.
+ */
+export function isSafeImage(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(value)
+  );
+}
+
 function read(key: string): string | null {
   try {
     const value = localStorage.getItem(key);
-    return value?.startsWith('data:image/') ? value : null;
+    return isSafeImage(value) ? value : null;
   } catch {
     return null;
   }

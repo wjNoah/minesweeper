@@ -1,4 +1,4 @@
-import { PresetId } from './game.model';
+import { PRESETS, PresetId } from './game.model';
 
 export type MineRule = 'defeat' | 'penalty';
 export type PenaltySeconds = 5 | 10 | 20 | 30;
@@ -75,40 +75,51 @@ export function decideOutcome(me: Finish | null, opponent: Finish | null, rule: 
   return 'pending';
 }
 
-/** Checks a message received from the other device before using it. */
+/** Real messages are well under 1 KB; anything bigger is ignored. */
+export const MAX_MESSAGE_CHARS = 10_000;
+/** The slowest possible round: a day. Stops absurd times in the result screen. */
+const MAX_TOTAL_MS = 24 * 60 * 60 * 1000;
+const MAX_COUNT = 10_000;
+
+/** Reads raw data from the other device. Returns null for anything that is not a valid message. */
+export function parseMatchMessage(data: unknown): MatchMessage | null {
+  if (typeof data !== 'string' || data.length > MAX_MESSAGE_CHARS) return null;
+  try {
+    const parsed: unknown = JSON.parse(data);
+    return isMatchMessage(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Checks a message received from the other device before using it. The other
+ * device is not trusted: every number must be a whole number in a sane range,
+ * so a broken or modified opponent cannot crash this game with bad positions.
+ */
 export function isMatchMessage(value: unknown): value is MatchMessage {
   if (typeof value !== 'object' || value === null) return false;
   const message = value as Record<string, unknown>;
-  const isNumber = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 
   switch (message['type']) {
     case 'rules':
       return isRules(message['rules']);
-    case 'start': {
-      const start = message['start'] as Record<string, unknown> | null;
-      return (
-        isNumber(message['round']) &&
-        isRules(message['rules']) &&
-        Array.isArray(message['mines']) &&
-        message['mines'].every(isNumber) &&
-        typeof start === 'object' &&
-        start !== null &&
-        isNumber(start['row']) &&
-        isNumber(start['col'])
-      );
-    }
+    case 'start':
+      return isRound(message['round']) && isStart(message);
     case 'progress':
       return (
-        isNumber(message['round']) && isNumber(message['revealed']) && isNumber(message['minesHit'])
+        isRound(message['round']) &&
+        isWholeNumber(message['revealed'], MAX_COUNT) &&
+        isWholeNumber(message['minesHit'], MAX_COUNT)
       );
     case 'finished': {
       const finish = message['finish'] as Record<string, unknown> | null;
       return (
-        isNumber(message['round']) &&
+        isRound(message['round']) &&
         typeof finish === 'object' &&
         finish !== null &&
         ['cleared', 'exploded', 'stopped'].includes(finish['kind'] as string) &&
-        isNumber(finish['totalMs'])
+        isWholeNumber(finish['totalMs'], MAX_TOTAL_MS)
       );
     }
     case 'rematch':
@@ -117,6 +128,37 @@ export function isMatchMessage(value: unknown): value is MatchMessage {
     default:
       return false;
   }
+}
+
+function isWholeNumber(value: unknown, max: number): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= max;
+}
+
+function isRound(value: unknown): boolean {
+  return isWholeNumber(value, 1_000_000);
+}
+
+/** The mine positions must fit the board the rules describe, and the opening must be safe. */
+function isStart(message: Record<string, unknown>): boolean {
+  if (!isRules(message['rules'])) return false;
+  const rules = message['rules'] as MatchRules;
+  const preset = PRESETS.find((p) => p.id === rules.preset);
+  const mines = message['mines'];
+  const start = message['start'] as Record<string, unknown> | null;
+  if (!preset || !Array.isArray(mines) || typeof start !== 'object' || start === null) return false;
+
+  const cells = preset.rows * preset.cols;
+  if (mines.length !== preset.mines) return false;
+  if (!mines.every((index) => isWholeNumber(index, cells - 1))) return false;
+  if (new Set(mines).size !== mines.length) return false;
+
+  if (
+    !isWholeNumber(start['row'], preset.rows - 1) ||
+    !isWholeNumber(start['col'], preset.cols - 1)
+  ) {
+    return false;
+  }
+  return !mines.includes((start['row'] as number) * preset.cols + (start['col'] as number));
 }
 
 function isRules(value: unknown): value is MatchRules {

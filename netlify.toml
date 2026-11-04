@@ -1,0 +1,78 @@
+# Netlify settings, kept in the repository so the deploy is the same every time.
+# Settings made here override the ones in the Netlify website.
+
+[build]
+  command = "npm run build"
+  # The Angular build puts the finished site in dist/<project>/browser.
+  publish = "dist/minesweeper/browser"
+
+[build.environment]
+  # Angular 22 needs Node 22.22.3, 24.15 or newer; Netlify's default can be older.
+  NODE_VERSION = "24"
+
+# ---------------------------------------------------------------------------
+# Security headers for every page and file
+# ---------------------------------------------------------------------------
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Only this site's own files may run or load. No third-party scripts, fonts or requests.
+    #  - script-src 'self': no inline scripts (the start-up script is public/early-theme.js).
+    #  - style-src 'unsafe-inline': Angular adds each component's CSS as an inline <style> tag.
+    #  - img-src data: : the user's own pictures are stored as data URLs.
+    #  - connect-src 'self': the game makes no network requests. (The 1v1 WebRTC connection
+    #    is not controlled by CSP; see docs in README.)
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; worker-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+    # Browsers must not guess file types (stops uploaded or odd files being run as scripts).
+    X-Content-Type-Options = "nosniff"
+    # Nobody may show the game inside another page (clickjacking). Old browsers use this header,
+    # new ones use frame-ancestors above.
+    X-Frame-Options = "DENY"
+    # Do not tell other sites which page the visitor came from.
+    Referrer-Policy = "no-referrer"
+    # The game needs none of these browser features, so they are switched off.
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), hid=(), midi=(), magnetometer=(), gyroscope=(), accelerometer=()"
+    # Always use https for a year (the browser remembers this).
+    Strict-Transport-Security = "max-age=31536000"
+    # Separate this page from other windows, and keep its files from being embedded elsewhere.
+    Cross-Origin-Opener-Policy = "same-origin"
+    Cross-Origin-Resource-Policy = "same-origin"
+
+# ---------------------------------------------------------------------------
+# Caching: files whose name contains a hash never change, so they are kept for a year.
+# The page itself and the start-up script are always checked for a new version.
+# ---------------------------------------------------------------------------
+[[headers]]
+  for = "/main-*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/chunk-*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/styles-*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/polyfills-*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/early-theme.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/favicon.ico"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"

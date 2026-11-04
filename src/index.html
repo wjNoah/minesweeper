@@ -1,35 +1,23 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Minesweeper</title>
-  <base href="/">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <script>
-    // Apply the saved theme, cell size, board theme and background before the first paint,
-    // so the page doesn't flash.
-    try {
-      const settings = JSON.parse(localStorage.getItem('minesweeper.settings') || '{}');
-      if (settings.theme === 'light' || settings.theme === 'dark') {
-        document.documentElement.dataset.theme = settings.theme;
-      }
-      if ([1, 1.25, 1.5].includes(settings.cellScale)) {
-        document.documentElement.style.setProperty('--cell-scale', settings.cellScale);
-      }
-      const appearance = JSON.parse(localStorage.getItem('minesweeper.appearance') || '{}');
-      if (typeof appearance.boardTheme === 'string') {
-        document.documentElement.dataset.boardTheme = appearance.boardTheme;
-      }
-      const pageImage = localStorage.getItem('minesweeper.pageImage');
-      if (pageImage && pageImage.startsWith('data:image/')) {
-        document.documentElement.style.setProperty('--page-image', 'url("' + pageImage + '")');
-        document.documentElement.dataset.pageImage = 'on';
-      }
-    } catch {}
-  </script>
-</head>
-<body>
-  <app-root></app-root>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <title>Minesweeper</title>
+    <base href="/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Minesweeper in your browser: no-guessing boards, hints, themes, keyboard play and a 1v1 mode for two devices on the same network. No account needed."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f5f3ee" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#151513" media="(prefers-color-scheme: dark)" />
+    <meta name="referrer" content="no-referrer" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <script src="early-theme.js"></script>
+  </head>
+  <body>
+    <app-root></app-root>
+    <noscript>This game needs JavaScript. Please turn it on in your browser.</noscript>
+  </body>
 </html>

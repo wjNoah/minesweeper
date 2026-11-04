@@ -1,5 +1,11 @@
 export class ImageError extends Error {}
 
+/** Formats the browser can always decode. SVG is left out on purpose. */
+const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+const MAX_FILE_BYTES = 15 * 1024 * 1024;
+/** Decoding needs about 4 bytes per pixel, so this keeps memory use below roughly 250 MB. */
+const MAX_PIXELS = 60_000_000;
+
 /**
  * Shrinks a picture so its longest side is at most maxSide pixels and returns it
  * as a data URL. Keeps stored pictures small enough for localStorage.
@@ -11,13 +17,21 @@ export async function resizeImage(
   maxSide: number,
   keepTransparency = false,
 ): Promise<string> {
-  if (!file.type.startsWith('image/')) throw new ImageError('Please choose an image file.');
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    throw new ImageError('Please choose a PNG, JPEG, WebP or GIF picture.');
+  }
+  if (file.size > MAX_FILE_BYTES) throw new ImageError('This picture is larger than 15 MB.');
 
   let bitmap: ImageBitmap;
   try {
     bitmap = await createImageBitmap(file);
   } catch {
     throw new ImageError('This picture could not be read. Try a JPEG or PNG.');
+  }
+
+  if (bitmap.width * bitmap.height > MAX_PIXELS) {
+    bitmap.close();
+    throw new ImageError('This picture has too many pixels. Try a smaller one.');
   }
 
   const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));

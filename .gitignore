@@ -48,3 +48,6 @@ Thumbs.db
 .claude
 CLAUDE.md
 docs
+
+# Local tool config
+.mcp.json
