@@ -28,6 +28,8 @@ export class MatchBar {
     return this.percent(revealed);
   });
 
+  protected readonly opponentName = computed(() => (this.match.isBot() ? 'Bot' : 'Opponent'));
+
   protected readonly opponentPercent = computed(() => this.percent(this.match.opponent().revealed));
 
   protected readonly headline = computed(() => HEADLINES[this.match.outcome()]);

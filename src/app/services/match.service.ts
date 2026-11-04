@@ -1,6 +1,8 @@
 import { computed, DestroyRef, effect, inject, Injectable, signal, untracked } from '@angular/core';
+import { BOT_LEVELS, BotLevel } from '../models/bot.model';
 import { PRESETS } from '../models/game.model';
 import {
+  COUNTDOWN_SECONDS,
   decideOutcome,
   DEFAULT_RULES,
   Finish,
@@ -8,9 +10,11 @@ import {
   MatchRules,
   Position,
 } from '../models/match.model';
-import { computeAdjacentCounts, createEmptyBoard, Grid, placeMines, RandomFn } from './board-logic';
+import { createEmptyBoard, Grid, gridWithMines, placeMines, RandomFn } from './board-logic';
+import { BotOpponent } from './bot-opponent';
 import { ConnectionService } from './connection.service';
 import { GameService } from './game.service';
+import { MatchTransport } from './match-transport';
 import { generateNoGuessBoard } from './solver';
 
 /** lobby: connected, choosing rules. countdown → playing → finished, then a rematch goes back to countdown. */
@@ -21,12 +25,12 @@ export interface OpponentProgress {
   minesHit: number;
 }
 
-const COUNTDOWN_SECONDS = 3;
-
 @Injectable({ providedIn: 'root' })
 export class MatchService {
-  private readonly connection = inject(ConnectionService);
+  private readonly network = inject(ConnectionService);
   private readonly game = inject(GameService);
+  /** The opponent: another person over the network, or the bot on this device. */
+  private readonly transport = signal<MatchTransport>(this.network);
 
   readonly phase = signal<MatchPhase>('lobby');
   readonly rules = signal<MatchRules>(DEFAULT_RULES);
@@ -39,8 +43,10 @@ export class MatchService {
   /** Shown after the match ended unexpectedly, for example when the opponent left. */
   readonly notice = signal('');
 
-  readonly isHost = computed(() => this.connection.role() === 'host');
-  readonly isConnected = computed(() => this.connection.state() === 'connected');
+  readonly botLevel = signal<BotLevel>('medium');
+  readonly isBot = computed(() => this.transport() !== this.network);
+  readonly isHost = computed(() => this.transport().role() === 'host');
+  readonly isConnected = computed(() => this.transport().state() === 'connected');
   readonly outcome = computed(() =>
     decideOutcome(this.myFinish(), this.opponentFinish(), this.rules().mineRule),
   );
@@ -57,22 +63,24 @@ export class MatchService {
   private raceTimer: ReturnType<typeof setInterval> | undefined;
 
   constructor() {
-    const stopListening = this.connection.onMessage((message) => this.handle(message));
-    inject(DestroyRef).onDestroy(() => {
-      stopListening();
-      this.stopTimers();
+    inject(DestroyRef).onDestroy(() => this.stopTimers());
+
+    // Listen to whichever opponent is active, and stop listening when it changes.
+    effect((onCleanup) => {
+      const transport = this.transport();
+      onCleanup(transport.onMessage((message) => this.handle(message)));
     });
 
     // When the connection opens, the host shares the current rules.
     effect(() => {
       if (this.isConnected() && untracked(this.isHost)) {
-        this.connection.send({ type: 'rules', rules: untracked(this.rules) });
+        this.send({ type: 'rules', rules: untracked(this.rules) });
       }
     });
 
     // Losing the connection ends the match.
     effect(() => {
-      const state = this.connection.state();
+      const state = this.transport().state();
       if (state !== 'closed' && state !== 'failed') return;
       untracked(() => {
         if (this.game.mode() === 'match') {
@@ -90,7 +98,7 @@ export class MatchService {
       if (untracked(this.phase) !== 'playing') return;
 
       const revealed = board.flat().filter((cell) => cell.isRevealed && !cell.hasMine).length;
-      this.connection.send({ type: 'progress', round: this.round, revealed, minesHit });
+      this.send({ type: 'progress', round: this.round, revealed, minesHit });
       if (status === 'won') untracked(() => this.finishMine('cleared'));
       if (status === 'lost') untracked(() => this.finishMine('exploded'));
     });
@@ -100,7 +108,22 @@ export class MatchService {
   setRules(changes: Partial<MatchRules>): void {
     if (!this.isHost()) return;
     this.rules.update((rules) => ({ ...rules, ...changes }));
-    this.connection.send({ type: 'rules', rules: this.rules() });
+    this.send({ type: 'rules', rules: this.rules() });
+  }
+
+  /** Play against the computer on this device. No network needed; the person is the host. */
+  playBot(): void {
+    this.notice.set('');
+    this.transport.set(
+      new BotOpponent(
+        () => BOT_LEVELS[this.botLevel()],
+        () => this.random(),
+      ),
+    );
+  }
+
+  setBotLevel(level: BotLevel): void {
+    this.botLevel.set(level);
   }
 
   /** Host: start a round. Guest: ask the host for one. */
@@ -108,7 +131,7 @@ export class MatchService {
     if (!this.isConnected()) return;
     if (!this.isHost()) {
       this.rematchRequested.set(true);
-      this.connection.send({ type: 'rematch' });
+      this.send({ type: 'rematch' });
       return;
     }
 
@@ -128,13 +151,15 @@ export class MatchService {
     this.notice.set('');
     this.round++;
     // Sending the mine positions (not a seed) guarantees both boards are identical.
-    this.connection.send({ type: 'start', round: this.round, rules, mines, start });
+    this.send({ type: 'start', round: this.round, rules, mines, start });
     this.beginCountdown(rules, mines, start);
   }
 
   leave(): void {
-    this.connection.close();
+    this.transport().close();
     this.endMatch();
+    // Back to the network opponent, so the next match can be hosted or joined again.
+    this.transport.set(this.network);
   }
 
   dismissNotice(): void {
@@ -203,12 +228,7 @@ export class MatchService {
 
   private minefieldFrom(rules: MatchRules, mines: number[]): Grid {
     const preset = PRESETS.find((p) => p.id === rules.preset) ?? PRESETS[0];
-    const mineSet = new Set(mines);
-    const empty = createEmptyBoard(preset.rows, preset.cols);
-    const withMines = empty.map((line) =>
-      line.map((cell) => ({ ...cell, hasMine: mineSet.has(cell.row * preset.cols + cell.col) })),
-    );
-    return computeAdjacentCounts(withMines);
+    return gridWithMines(preset.rows, preset.cols, mines);
   }
 
   /** Penalty rule: once my time passes a finished opponent's, I can't win any more. */
@@ -223,7 +243,7 @@ export class MatchService {
     this.game.stopMatchRound();
     const finish: Finish = { kind, totalMs: this.game.totalMs() };
     this.myFinish.set(finish);
-    this.connection.send({ type: 'finished', round: this.round, finish });
+    this.send({ type: 'finished', round: this.round, finish });
     this.checkOutcome();
   }
 
@@ -242,6 +262,10 @@ export class MatchService {
     this.opponentFinish.set(null);
     this.rematchRequested.set(false);
     if (this.game.mode() === 'match') this.game.leaveMatch();
+  }
+
+  private send(message: MatchMessage): void {
+    this.transport().send(message);
   }
 
   private stopTimers(): void {

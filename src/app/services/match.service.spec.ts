@@ -135,4 +135,37 @@ describe('MatchService', () => {
     expect(game.mode()).toBe('solo');
     expect(match.notice()).toContain('opponent left');
   });
+
+  describe('against the bot', () => {
+    it('plays a whole round: the bot clears the board while the person waits', async () => {
+      setUp('host');
+      const sentBefore = connection.sent.length;
+      match.playBot();
+      match.setBotLevel('hard');
+      TestBed.tick();
+      expect(match.isBot()).toBe(true);
+      expect(match.isHost()).toBe(true);
+
+      match.startRound();
+      expect(match.phase()).toBe('countdown');
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(match.phase()).toBe('playing');
+
+      await vi.advanceTimersByTimeAsync(180_000);
+      expect(match.opponentFinish()?.kind).toBe('cleared');
+      expect(match.outcome()).toBe('lost');
+      expect(match.phase()).toBe('finished');
+      // Nothing went over the network once the bot was chosen.
+      expect(connection.sent.length).toBe(sentBefore);
+    });
+
+    it('leaving the bot returns to normal play and to network matches', () => {
+      setUp('host');
+      match.playBot();
+      TestBed.tick();
+      match.leave();
+      expect(match.isBot()).toBe(false);
+      expect(game.mode()).toBe('solo');
+    });
+  });
 });

@@ -8,6 +8,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { BOT_LEVEL_IDS, BOT_LEVELS, BotLevel } from '../../models/bot.model';
 import { PRESETS } from '../../models/game.model';
 import { MineRule, PENALTY_OPTIONS } from '../../models/match.model';
 import { ConnectionService } from '../../services/connection.service';
@@ -35,6 +36,12 @@ export class MatchDialog {
   protected readonly joining = signal(false);
   protected readonly copied = signal(false);
   protected readonly canShare = typeof navigator.share === 'function';
+  protected readonly botLevels = BOT_LEVEL_IDS;
+  protected readonly botSkill = computed(() => BOT_LEVELS[this.match.botLevel()]);
+  /** Against the bot there is no connection to set up: it is "connected" right away. */
+  protected readonly view = computed(() =>
+    this.match.isBot() ? 'connected' : this.connection.state(),
+  );
   /** Everything after choosing Host or Join can step back to that choice. */
   protected readonly canGoBack = computed(
     () =>
@@ -64,6 +71,15 @@ export class MatchDialog {
   protected host(): void {
     this.joining.set(false);
     void this.connection.host();
+  }
+
+  protected playBot(): void {
+    this.joining.set(false);
+    this.match.playBot();
+  }
+
+  protected botLevelLabel(level: BotLevel): string {
+    return BOT_LEVELS[level].label;
   }
 
   protected join(code: string): void {
