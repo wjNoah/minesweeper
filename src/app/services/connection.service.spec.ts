@@ -57,7 +57,7 @@ describe('ConnectionService', () => {
 
   it('host creates a room, waits, and is connected when the guest joins', () => {
     connection.host();
-    expect(latest().url).toMatch(/\/room\/[A-Z2-9]{5}\?create$/);
+    expect(latest().url).toMatch(/\/room\/[A-Z2-9]{5}\?create=[A-Z2-9]{24}$/);
     expect(latest().url).toContain(connection.roomCode());
     expect(connection.state()).toBe('connecting');
 
@@ -141,7 +141,7 @@ describe('ConnectionService', () => {
     first.closeFromServer(4009);
     expect(FakeSocket.all.length).toBe(2);
     expect(latest().url).toContain('?create');
-    expect(connection.state()).toBe('connecting');
+    expect(latest().url).not.toBe(first.url);
   });
 
   it('is closed when the opponent leaves', () => {
@@ -166,8 +166,105 @@ describe('ConnectionService', () => {
   it('keeps the connection alive with pings', () => {
     connection.host();
     latest().open();
-    vi.advanceTimersByTime(30_000);
+    vi.advanceTimersByTime(15_000);
     expect(latest().sent).toEqual(['ping']);
+  });
+
+  it('notices a silently dead connection during a match', () => {
+    connection.join('K7XPM');
+    latest().open();
+    latest().receive('paired');
+
+    vi.advanceTimersByTime(30_000);
+    expect(connection.state()).toBe('connected'); // Two pings unanswered: maybe just slow.
+    vi.advanceTimersByTime(15_000);
+    expect(connection.state()).toBe('closed');
+    expect(latest().closedByClient).toBe(true);
+  });
+
+  it('stays connected as long as pings are answered', () => {
+    connection.join('K7XPM');
+    latest().open();
+    latest().receive('paired');
+    for (let i = 0; i < 10; i++) {
+      vi.advanceTimersByTime(15_000);
+      latest().receive('pong');
+    }
+    expect(connection.state()).toBe('connected');
+  });
+
+  it('gives up on an attempt that hangs (for example behind a firewall)', () => {
+    connection.join('K7XPM');
+    vi.advanceTimersByTime(15_000);
+    expect(connection.state()).toBe('failed');
+    expect(connection.error()).toContain('Could not reach the game server');
+  });
+
+  it('gives up when the relay opens but never pairs the guest', () => {
+    connection.join('K7XPM');
+    latest().open();
+    vi.advanceTimersByTime(15_000);
+    expect(connection.state()).toBe('failed');
+  });
+
+  describe('waiting host who loses the connection', () => {
+    it('returns to the same room with the same code and key', () => {
+      connection.host();
+      const first = latest();
+      first.open();
+      const code = connection.roomCode();
+
+      first.closeFromServer(1006);
+      expect(connection.state()).toBe('waiting');
+      expect(connection.reconnecting()).toBe(true);
+      expect(connection.roomCode()).toBe(code);
+
+      vi.advanceTimersByTime(2000);
+      expect(latest()).not.toBe(first);
+      expect(latest().url).toBe(first.url);
+
+      latest().open();
+      expect(connection.reconnecting()).toBe(false);
+      latest().receive('paired');
+      expect(connection.state()).toBe('connected');
+    });
+
+    it('keeps trying, and the 15-minute limit still ends it', () => {
+      connection.host();
+      latest().open();
+      latest().closeFromServer(1006);
+      vi.advanceTimersByTime(2000);
+      latest().closeFromServer(1006); // Still offline.
+      vi.advanceTimersByTime(2000);
+      expect(connection.state()).toBe('waiting');
+      expect(FakeSocket.all.length).toBe(3);
+
+      vi.advanceTimersByTime(15 * 60_000);
+      expect(connection.state()).toBe('failed');
+      expect(connection.error()).toContain('nobody joined');
+    });
+
+    it('stops trying after the host goes back', () => {
+      connection.host();
+      latest().open();
+      latest().closeFromServer(1006);
+      connection.close();
+      vi.advanceTimersByTime(60_000);
+      expect(FakeSocket.all.length).toBe(1);
+      expect(connection.state()).toBe('idle');
+      expect(connection.reconnecting()).toBe(false);
+    });
+  });
+
+  it('an old connection attempt cannot affect a new one', () => {
+    connection.join('K7XPM');
+    connection.join('ABCDE');
+    expect(FakeSocket.all[0].closedByClient).toBe(true);
+    vi.advanceTimersByTime(14_000);
+    latest().open();
+    latest().receive('paired');
+    vi.advanceTimersByTime(5_000);
+    expect(connection.state()).toBe('connected');
   });
 
   it('closes a room that nobody joined for 15 minutes', () => {

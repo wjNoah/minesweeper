@@ -59,6 +59,7 @@ export class MatchBar {
 
   private percent(revealed: number): number {
     const total = this.match.safeCells();
-    return total > 0 ? Math.round((100 * revealed) / total) : 0;
+    // The opponent's number is not trusted, so it can't go past 100%.
+    return total > 0 ? Math.min(100, Math.round((100 * revealed) / total)) : 0;
   }
 }

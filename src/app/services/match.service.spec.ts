@@ -144,6 +144,51 @@ describe('MatchService', () => {
     expect(sentOfType('progress').length).toBe(before + 1);
   });
 
+  describe('while a round is running', () => {
+    it('the host cannot restart it (for example from the open 1v1 dialog)', () => {
+      setUp('host');
+      match.startRound();
+      match.startRound();
+      expect(sentOfType('start').length).toBe(1);
+
+      vi.advanceTimersByTime(3000);
+      match.startRound();
+      expect(sentOfType('start').length).toBe(1);
+      expect(match.phase()).toBe('playing');
+    });
+
+    it('the host cannot change the rules, so both devices decide the winner the same way', () => {
+      setUp('host');
+      match.startRound();
+      vi.advanceTimersByTime(3000);
+      match.setRules({ mineRule: 'penalty' });
+      expect(match.rules().mineRule).toBe('defeat');
+    });
+
+    it('the guest ignores rule changes', () => {
+      setUp('guest');
+      connection.deliver({
+        type: 'start',
+        round: 1,
+        rules: { preset: 'beginner', noGuess: false, mineRule: 'defeat', penaltySeconds: 10 },
+        mines: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        start: { row: 8, col: 8 },
+      });
+      connection.deliver({
+        type: 'rules',
+        rules: { preset: 'expert', noGuess: false, mineRule: 'penalty', penaltySeconds: 30 },
+      });
+      expect(match.rules().mineRule).toBe('defeat');
+    });
+
+    it('a rematch request from the guest does not restart it', () => {
+      setUp('host');
+      match.startRound();
+      connection.deliver({ type: 'rematch' });
+      expect(sentOfType('start').length).toBe(1);
+    });
+  });
+
   it('guest asks for a rematch instead of starting', () => {
     setUp('guest');
     match.startRound();

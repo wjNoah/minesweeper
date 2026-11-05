@@ -25,6 +25,15 @@ import {
 } from './board-logic';
 import { findHint, generateNoGuessBoard, Hint } from './solver';
 
+/** How long "Mine hit" stays on screen. A bit shorter than its CSS animation (board.scss). */
+const PENALTY_FLASH_MS = 1300;
+
+export interface PenaltyFlash {
+  /** New for every hit, so the message pops up again after a quick second hit. */
+  id: number;
+  seconds: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class GameService {
   private readonly bestTimes = inject(BestTimesService);
@@ -56,6 +65,8 @@ export class GameService {
   readonly mineRule = signal<MineRule>('defeat');
   readonly penaltySeconds = signal(0);
   readonly minesHit = signal(0);
+  /** The short "Mine hit, +10 s" message after a mine under the time penalty. */
+  readonly penaltyFlash = signal<PenaltyFlash | null>(null);
   /** Shown time: elapsed time plus penalties. */
   readonly displaySeconds = computed(
     () => this.elapsedSeconds() + this.minesHit() * this.penaltySeconds(),
@@ -82,9 +93,14 @@ export class GameService {
   private timerId: ReturnType<typeof setInterval> | undefined;
   private startedAt = 0;
   private finalMs = 0;
+  private flashTimer: ReturnType<typeof setTimeout> | undefined;
+  private flashCount = 0;
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.stopTimer());
+    inject(DestroyRef).onDestroy(() => {
+      this.stopTimer();
+      clearTimeout(this.flashTimer);
+    });
   }
 
   newGame(): void {
@@ -99,6 +115,8 @@ export class GameService {
     this.clearHint();
     this.hintsUsed.set(0);
     this.minesHit.set(0);
+    clearTimeout(this.flashTimer);
+    this.penaltyFlash.set(null);
     this.finalMs = 0;
   }
 
@@ -137,7 +155,7 @@ export class GameService {
 
   /** Exact time including penalties, in milliseconds, for comparing 1v1 results. */
   totalMs(): number {
-    const elapsed = this.status() === 'playing' ? Date.now() - this.startedAt : this.finalMs;
+    const elapsed = this.status() === 'playing' ? this.runningMs() : this.finalMs;
     return elapsed + this.minesHit() * this.penaltySeconds() * 1000;
   }
 
@@ -237,6 +255,7 @@ export class GameService {
       const covered = coverHitMines(next);
       next = covered.grid;
       this.minesHit.update((count) => count + covered.hit);
+      this.showPenaltyFlash(covered.hit * this.penaltySeconds());
     }
     this.board.set(next);
     if (isLost(next)) {
@@ -245,6 +264,13 @@ export class GameService {
       this.board.set(flagAllMines(next));
       this.endGame('won');
     }
+  }
+
+  private showPenaltyFlash(seconds: number): void {
+    this.penaltyFlash.set({ id: ++this.flashCount, seconds });
+    clearTimeout(this.flashTimer);
+    this.flashTimer = setTimeout(() => this.penaltyFlash.set(null), PENALTY_FLASH_MS);
+    if (this.settings.settings().haptics) navigator.vibrate?.(120);
   }
 
   private endGame(result: 'won' | 'lost'): void {
@@ -268,8 +294,13 @@ export class GameService {
     this.timerId = undefined;
   }
 
+  /** Never negative, even if the computer's clock is set back during a game. */
+  private runningMs(): number {
+    return Math.max(0, Date.now() - this.startedAt);
+  }
+
   private updateElapsed(): void {
-    this.finalMs = Date.now() - this.startedAt;
+    this.finalMs = this.runningMs();
     this.elapsedSeconds.set(Math.floor(this.finalMs / 1000));
   }
 }

@@ -74,28 +74,28 @@ export class AppearanceService {
   }
 
   removeFlagImage(): void {
-    localStorage.removeItem(FLAG_IMAGE_KEY);
+    remove(FLAG_IMAGE_KEY);
     this.flagImage.set(null);
   }
 
   removeMineImage(): void {
-    localStorage.removeItem(MINE_IMAGE_KEY);
+    remove(MINE_IMAGE_KEY);
     this.mineImage.set(null);
   }
 
   removePageImage(): void {
-    localStorage.removeItem(PAGE_IMAGE_KEY);
+    remove(PAGE_IMAGE_KEY);
     this.pageImage.set(null);
   }
 
   removeTileImage(): void {
-    localStorage.removeItem(TILE_IMAGE_KEY);
+    remove(TILE_IMAGE_KEY);
     this.tileImage.set(null);
   }
 
   /** Back to the default theme and removes all pictures. */
   reset(): void {
-    localStorage.removeItem(APPEARANCE_KEY);
+    remove(APPEARANCE_KEY);
     this.choices.set({ ...DEFAULT_APPEARANCE });
     this.removePageImage();
     this.removeTileImage();
@@ -148,6 +148,15 @@ export function isSafeImage(value: unknown): value is string {
     typeof value === 'string' &&
     /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(value)
   );
+}
+
+/** Storage can be blocked. Removing a picture still applies for this visit. */
+function remove(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Nothing to remove.
+  }
 }
 
 function read(key: string): string | null {

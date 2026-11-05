@@ -38,6 +38,8 @@ const MAX_MESSAGES_PER_WINDOW = 60;
 
 /** Sent to both players when the guest has joined. */
 const PAIRED = 'paired';
+/** The host's secret, which lets the same host come back to the room (see fetch below). */
+const HOST_KEY = /^[A-Za-z0-9]{16,64}$/;
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -69,19 +71,35 @@ export class MatchRoom extends DurableObject<Env> {
   }
 
   override async fetch(request: Request): Promise<Response> {
-    const creating = new URL(request.url).searchParams.has('create');
-    const hosts = this.ctx.getWebSockets('host').length;
+    const hostKey = new URL(request.url).searchParams.get('create');
+    const creating = hostKey !== null;
+    const hosts = this.ctx.getWebSockets('host').filter((socket) => !playerOf(socket).replaced);
     const guests = this.ctx.getWebSockets('guest').length;
 
-    if (creating && hosts + guests > 0) return rejectSocket(CLOSE.codeTaken, 'Code taken');
-    if (!creating && hosts === 0) return rejectSocket(CLOSE.notFound, 'Room not found');
-    if (!creating && guests > 0) return rejectSocket(CLOSE.full, 'Room full');
+    // A phone drops the connection when the host switches to a chat app to send the code.
+    // The old socket may still look alive here, so a host with the right key takes over.
+    const previous = HOST_KEY.test(hostKey ?? '')
+      ? hosts.find((socket) => playerOf(socket).key === hostKey)
+      : undefined;
+    if (previous) {
+      previous.serializeAttachment({ ...playerOf(previous), replaced: true });
+      closeQuietly(previous, CLOSE.opponentLeft, 'Replaced');
+    } else {
+      if (creating && hosts.length + guests > 0) return rejectSocket(CLOSE.codeTaken, 'Code taken');
+      if (!creating && hosts.length === 0) return rejectSocket(CLOSE.notFound, 'Room not found');
+      if (!creating && guests > 0) return rejectSocket(CLOSE.full, 'Room full');
+    }
 
     const role: Role = creating ? 'host' : 'guest';
     const [client, server] = Object.values(new WebSocketPair());
     this.ctx.acceptWebSocket(server, [role]);
-    server.serializeAttachment(newWindow());
-    if (role === 'guest') this.ctx.getWebSockets().forEach((socket) => socket.send(PAIRED));
+    server.serializeAttachment(newPlayer(hostKey ?? ''));
+    if (role === 'guest' || guests > 0) {
+      this.ctx
+        .getWebSockets()
+        .filter((socket) => !playerOf(socket).replaced)
+        .forEach((socket) => sendQuietly(socket, PAIRED));
+    }
 
     return new Response(null, { status: 101, webSocket: client });
   }
@@ -95,12 +113,15 @@ export class MatchRoom extends DurableObject<Env> {
       socket.close(CLOSE.tooMany, 'Too many messages');
       return;
     }
-    this.others(socket).forEach((other) => other.send(message));
+    this.others(socket).forEach((other) => sendQuietly(other, message));
   }
 
   /** One player left, so the match is over: close the room for the other one too. */
   override webSocketClose(socket: WebSocket): void {
-    this.others(socket).forEach((other) => other.close(CLOSE.opponentLeft, 'Opponent left'));
+    if (playerOf(socket).replaced) return; // The host is back on a new connection.
+    this.others(socket).forEach((other) =>
+      closeQuietly(other, CLOSE.opponentLeft, 'Opponent left'),
+    );
   }
 
   override webSocketError(socket: WebSocket): void {
@@ -108,7 +129,9 @@ export class MatchRoom extends DurableObject<Env> {
   }
 
   private others(socket: WebSocket): WebSocket[] {
-    return this.ctx.getWebSockets().filter((other) => other !== socket);
+    return this.ctx
+      .getWebSockets()
+      .filter((other) => other !== socket && !playerOf(other).replaced);
   }
 
   /**
@@ -116,21 +139,47 @@ export class MatchRoom extends DurableObject<Env> {
    * socket itself, because the room forgets everything else while it hibernates.
    */
   private countMessage(socket: WebSocket): boolean {
-    let window = socket.deserializeAttachment() as RateWindow;
-    if (Date.now() - window.start > RATE_WINDOW_MS) window = newWindow();
-    window.count++;
-    socket.serializeAttachment(window);
-    return window.count <= MAX_MESSAGES_PER_WINDOW;
+    const player = playerOf(socket);
+    const fresh = Date.now() - player.start > RATE_WINDOW_MS;
+    const count = fresh ? 1 : player.count + 1;
+    socket.serializeAttachment({ ...player, count, start: fresh ? Date.now() : player.start });
+    return count <= MAX_MESSAGES_PER_WINDOW;
   }
 }
 
-interface RateWindow {
+/** Stored on the socket, because it has to survive while the room hibernates. */
+interface Player {
+  /** The host's secret; empty for guests. */
+  key: string;
+  /** This host came back on a new connection, so this old socket no longer counts. */
+  replaced: boolean;
   start: number;
   count: number;
 }
 
-function newWindow(): RateWindow {
-  return { start: Date.now(), count: 0 };
+function newPlayer(key: string): Player {
+  return { key, replaced: false, start: Date.now(), count: 0 };
+}
+
+function playerOf(socket: WebSocket): Player {
+  return socket.deserializeAttachment() as Player;
+}
+
+/** The other player can disconnect at any moment. That must not break this message. */
+function sendQuietly(socket: WebSocket, message: string): void {
+  try {
+    socket.send(message);
+  } catch {
+    // Already closing: webSocketClose takes care of the room.
+  }
+}
+
+function closeQuietly(socket: WebSocket, code: number, reason: string): void {
+  try {
+    socket.close(code, reason);
+  } catch {
+    // Already closed.
+  }
 }
 
 /**

@@ -30,6 +30,7 @@ const PREVIEW_BASE: CellState = {
   hasMine: false,
   isRevealed: false,
   isFlagged: false,
+  isHit: false,
   adjacentMines: 0,
 };
 

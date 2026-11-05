@@ -40,6 +40,70 @@
   gap: 3px;
 }
 
+// Time penalty: the whole board flashes red when a mine is hit.
+.mine-hit {
+  border-color: var(--danger);
+  animation: board-flash 500ms ease-out;
+}
+
+@keyframes board-flash {
+  20% {
+    background-color: var(--danger);
+  }
+}
+
+// Sits on the board's top edge, below the progress bars. Sticky, so it stays on screen when a
+// big board is scrolled. Clicks go through, so it never gets in the way of the next move.
+.penalty-flash {
+  position: sticky;
+  top: 2rem;
+  z-index: 10;
+  display: grid;
+  justify-items: center;
+  height: 0;
+  pointer-events: none;
+}
+
+.penalty-message {
+  height: fit-content;
+  margin: -1.5rem 0 0;
+  padding: 0.6rem 1.25rem;
+  border-radius: 999px;
+  background: var(--danger);
+  box-shadow: 0 8px 24px -8px rgb(0 0 0 / 0.5);
+  color: #fff;
+  font-size: 1.375rem;
+  font-weight: 700;
+  animation: penalty-pop 1400ms ease-out;
+
+  strong {
+    margin-left: 0.35rem;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// Removed by the game service just before the end, so it can't flash back on.
+// With reduced motion there is no animation and it simply shows for that time.
+@keyframes penalty-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  25% {
+    transform: scale(1);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 @media (max-width: 600px) {
   .board {
     padding: 6px;

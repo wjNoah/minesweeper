@@ -7,7 +7,8 @@ const LONG_PRESS_MS = 400;
 /** A finger moving further than this is scrolling, not pressing. */
 const MOVE_TOLERANCE_PX = 10;
 
-type CellView = 'hidden' | 'flagged' | 'wrong-flag' | 'mine' | 'exploded' | 'number' | 'empty';
+type CellView =
+  'hidden' | 'flagged' | 'wrong-flag' | 'mine' | 'exploded' | 'hit' | 'number' | 'empty';
 
 const HINT_LABELS: Record<HintKind, string> = {
   safe: 'safe to open',
@@ -54,7 +55,8 @@ export class Cell {
   private suppressNextClick = false;
 
   protected readonly view = computed<CellView>(() => {
-    const { hasMine, isRevealed, isFlagged, adjacentMines } = this.cell();
+    const { hasMine, isRevealed, isFlagged, isHit, adjacentMines } = this.cell();
+    if (isHit) return 'hit';
     if (isRevealed) {
       if (hasMine) return 'exploded';
       return adjacentMines > 0 ? 'number' : 'empty';
@@ -82,6 +84,8 @@ export class Cell {
         return `${position}, wrong flag`;
       case 'exploded':
         return `${position}, exploded mine`;
+      case 'hit':
+        return `${position}, mine hit`;
       default:
         return `${position}, ${this.view()}`;
     }

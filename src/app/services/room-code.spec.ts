@@ -1,4 +1,4 @@
-import { createRoomCode, normalizeRoomCode, ROOM_CODE_ALPHABET } from './room-code';
+import { createHostKey, createRoomCode, normalizeRoomCode, ROOM_CODE_ALPHABET } from './room-code';
 
 describe('room codes', () => {
   it('creates 5 characters from the unambiguous alphabet', () => {
@@ -7,6 +7,11 @@ describe('room codes', () => {
       expect(code).toMatch(/^[A-Z2-9]{5}$/);
       expect([...code].every((char) => ROOM_CODE_ALPHABET.includes(char))).toBe(true);
     }
+  });
+
+  it('creates a long host key that fits what the relay accepts', () => {
+    expect(createHostKey()).toMatch(/^[A-Za-z0-9]{16,64}$/);
+    expect(createHostKey()).not.toBe(createHostKey());
   });
 
   it('never uses characters that look alike', () => {

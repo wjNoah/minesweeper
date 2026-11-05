@@ -134,6 +134,31 @@ describe('GameService', () => {
       expect(game.totalMs()).toBe(13_000);
     });
 
+    it('with the penalty rule, a mine stays marked and shows a short message', () => {
+      startRound('penalty');
+      const mine = find((hasMine) => hasMine);
+      game.reveal(mine.row, mine.col);
+
+      expect(game.board()[mine.row][mine.col].isHit).toBe(true);
+      expect(game.penaltyFlash()?.seconds).toBe(10);
+
+      vi.advanceTimersByTime(1300);
+      expect(game.penaltyFlash()).toBeNull();
+      expect(game.board()[mine.row][mine.col].isHit).toBe(true);
+    });
+
+    it('a second quick hit shows the message again', () => {
+      startRound('penalty');
+      const [first, second] = game
+        .board()
+        .flat()
+        .filter((cell) => cell.hasMine);
+      game.reveal(first.row, first.col);
+      const firstId = game.penaltyFlash()?.id;
+      game.reveal(second.row, second.col);
+      expect(game.penaltyFlash()?.id).not.toBe(firstId);
+    });
+
     it('with the defeat rule, a mine ends the game', () => {
       startRound('defeat');
       const mine = find((hasMine) => hasMine);

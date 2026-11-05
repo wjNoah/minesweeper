@@ -13,6 +13,7 @@ export function createEmptyBoard(rows: number, cols: number): Grid {
       hasMine: false,
       isRevealed: false,
       isFlagged: false,
+      isHit: false,
       adjacentMines: 0,
     })),
   );
@@ -144,7 +145,7 @@ export function revealCells(grid: Grid, cells: { row: number; col: number }[]): 
 
 export function toggleFlag(grid: Grid, row: number, col: number): Grid {
   const cell = grid[row][col];
-  if (cell.isRevealed) return grid;
+  if (cell.isRevealed || cell.isHit) return grid;
   return updateCell(grid, row, col, { isFlagged: !cell.isFlagged });
 }
 
@@ -164,8 +165,8 @@ export function chordCell(grid: Grid, row: number, col: number): Grid {
 }
 
 /**
- * For the 1v1 time penalty: revealed mines are covered again and flagged,
- * so the round can go on. Returns the new grid and how many mines were hit.
+ * For the 1v1 time penalty: revealed mines are covered again, flagged and marked
+ * as hit, so the round can go on. Returns the new grid and how many mines were hit.
  */
 export function coverHitMines(grid: Grid): { grid: Grid; hit: number } {
   let hit = 0;
@@ -173,7 +174,7 @@ export function coverHitMines(grid: Grid): { grid: Grid; hit: number } {
     line.map((cell) => {
       if (!cell.hasMine || !cell.isRevealed) return cell;
       hit++;
-      return { ...cell, isRevealed: false, isFlagged: true };
+      return { ...cell, isRevealed: false, isFlagged: true, isHit: true };
     }),
   );
   return { grid: next, hit };
