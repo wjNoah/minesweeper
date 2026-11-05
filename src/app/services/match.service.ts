@@ -55,6 +55,8 @@ export class MatchService {
   readonly isBot = computed(() => this.transport() !== this.network);
   readonly isHost = computed(() => this.transport().role() === 'host');
   readonly isConnected = computed(() => this.transport().state() === 'connected');
+  /** A round is running, so its rules must stay the same on both devices until it ends. */
+  readonly isRacing = computed(() => this.phase() === 'countdown' || this.phase() === 'playing');
   readonly outcome = computed(() =>
     decideOutcome(this.myFinish(), this.opponentFinish(), this.rules().mineRule),
   );
@@ -118,7 +120,7 @@ export class MatchService {
 
   /** Host only: change the rules for the next round. */
   setRules(changes: Partial<MatchRules>): void {
-    if (!this.isHost()) return;
+    if (!this.isHost() || this.isRacing()) return;
     this.rules.update((rules) => ({ ...rules, ...changes }));
     this.send({ type: 'rules', rules: this.rules() });
   }
@@ -126,6 +128,7 @@ export class MatchService {
   /** Play against the computer on this device. No network needed; the person is the host. */
   playBot(): void {
     this.notice.set('');
+    this.network.close(); // Forgets an old error, so it isn't shown again after the bot match.
     this.transport.set(
       new BotOpponent(
         () => BOT_LEVELS[this.botLevel()],
@@ -135,12 +138,13 @@ export class MatchService {
   }
 
   setBotLevel(level: BotLevel): void {
+    if (this.isRacing()) return;
     this.botLevel.set(level);
   }
 
   /** Host: start a round. Guest: ask the host for one. */
   startRound(): void {
-    if (!this.isConnected()) return;
+    if (!this.isConnected() || this.isRacing()) return;
     if (!this.isHost()) {
       this.rematchRequested.set(true);
       this.send({ type: 'rematch' });
@@ -181,7 +185,7 @@ export class MatchService {
   private handle(message: MatchMessage): void {
     switch (message.type) {
       case 'rules':
-        if (!this.isHost()) this.rules.set(message.rules);
+        if (!this.isHost() && !this.isRacing()) this.rules.set(message.rules);
         break;
       case 'start':
         if (this.isHost()) return;
@@ -202,9 +206,7 @@ export class MatchService {
         }
         break;
       case 'rematch':
-        if (this.isHost() && this.phase() !== 'countdown' && this.phase() !== 'playing') {
-          this.startRound();
-        }
+        if (this.isHost()) this.startRound();
         break;
     }
   }

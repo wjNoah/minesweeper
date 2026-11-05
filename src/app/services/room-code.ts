@@ -16,6 +16,15 @@ export function createRoomCode(random: RandomFn = secureRandom): string {
   return code;
 }
 
+/** The host's secret: with it the host can return to the room after losing the connection. */
+export function createHostKey(random: RandomFn = secureRandom): string {
+  let key = '';
+  for (let i = 0; i < 24; i++) {
+    key += ROOM_CODE_ALPHABET[Math.floor(random() * ROOM_CODE_ALPHABET.length)];
+  }
+  return key;
+}
+
 /** Cleans up what a player typed ("k7x pm" → "K7XPM"). Returns null if it can't be a code. */
 export function normalizeRoomCode(input: string): string | null {
   const code = input.toUpperCase().replace(/[\s-]/g, '');

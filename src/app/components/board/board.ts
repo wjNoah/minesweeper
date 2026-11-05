@@ -31,6 +31,11 @@ export class Board {
   protected readonly customFlag = computed(() => this.appearance.flagImage() !== null);
   protected readonly customMine = computed(() => this.appearance.mineImage() !== null);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  /** A list, so that a new hit makes a new element and its animation plays from the start. */
+  protected readonly penaltyFlashes = computed(() => {
+    const flash = this.game.penaltyFlash();
+    return flash ? [flash] : [];
+  });
 
   private readonly cursorPosition = signal<Position>({ row: 0, col: 0 });
   /** Keyboard cursor, kept inside the board when the size changes. It is also where Tab lands. */
@@ -131,6 +136,11 @@ export class Board {
     const active = this.hovered() ?? (focusInBoard ? this.cursor() : null);
 
     const step = cursorStep(event);
+    // Holding a key must not toggle a flag or open cells again and again. Only moving repeats.
+    if (event.repeat && !step) {
+      if (focusInBoard && (key === 'enter' || key === ' ')) event.preventDefault();
+      return;
+    }
     const inMatch = this.game.mode() === 'match';
     if (key === keys.newGame && !inMatch) {
       this.game.newGame();

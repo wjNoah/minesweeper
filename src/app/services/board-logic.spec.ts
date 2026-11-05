@@ -48,6 +48,7 @@ describe('createEmptyBoard', () => {
       hasMine: false,
       isRevealed: false,
       isFlagged: false,
+      isHit: false,
       adjacentMines: 0,
     });
   });
@@ -270,6 +271,13 @@ describe('coverHitMines', () => {
     expect(hit).toBe(1);
     expect(covered[0][0].isRevealed).toBe(false);
     expect(covered[0][0].isFlagged).toBe(true);
+    expect(covered[0][0].isHit).toBe(true);
     expect(isLost(covered)).toBe(false);
+  });
+
+  it('a hit mine cannot be unflagged, so it cannot be hit a second time', () => {
+    const grid = revealCell(gridFromLayout(['*.', '..']), 0, 0);
+    const { grid: covered } = coverHitMines(grid);
+    expect(toggleFlag(covered, 0, 0)).toBe(covered);
   });
 });

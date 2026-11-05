@@ -1,6 +1,15 @@
+<div class="penalty-flash" role="status">
+  @for (flash of penaltyFlashes(); track flash.id) {
+    <p class="penalty-message">
+      Mine hit <strong>+{{ flash.seconds }} s</strong>
+    </p>
+  }
+</div>
+
 <div class="scroll">
   <div
     class="board"
+    [class.mine-hit]="game.penaltyFlash()"
     [attr.data-status]="game.status()"
     [style.--board-rows]="game.config().rows"
     [style.--board-cols]="game.config().cols"

@@ -8,6 +8,7 @@ const FLAGGED: CellState = {
   hasMine: true,
   isRevealed: false,
   isFlagged: true,
+  isHit: false,
   adjacentMines: 0,
 };
 

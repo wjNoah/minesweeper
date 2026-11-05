@@ -6,7 +6,7 @@ export type PenaltySeconds = 5 | 10 | 20 | 30;
 export interface MatchRules {
   preset: PresetId;
   noGuess: boolean;
-  /** Defeat: a mine ends your game. Penalty: the mine is flagged and seconds are added. */
+  /** Defeat: a mine ends your game. Penalty: the mine is marked and seconds are added. */
   mineRule: MineRule;
   penaltySeconds: PenaltySeconds;
 }

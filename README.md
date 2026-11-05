@@ -36,7 +36,6 @@
 - [Project structure](#project-structure)
 - [How it works](#how-it-works)
 - [Testing](#testing)
-- [Deploying (Netlify)](#deploying-netlify)
 - [Security notes](#security-notes)
 
 ## Features
@@ -260,7 +259,7 @@ One of you creates a room and tells the other a **5-letter code**. No account an
 | Penalty per mine    | +5 s, +10 s, +20 s, +30 s (penalty only) | +10 s    |
 
 - **Defeat:** a mine loses the round at once. Otherwise the first to clear the board wins.
-- **Time penalty:** a hit mine is flagged for you and the seconds are added to your time. The
+- **Time penalty:** a hit mine stays marked in red and the seconds are added to your time. The
   game goes on and the **lowest total time wins**. Once your time passes a finished opponent's,
   you can no longer win.
 - **Fair start:** the host creates the board and sends the exact mine positions, and both players
@@ -277,7 +276,9 @@ One of you creates a room and tells the other a **5-letter code**. No account an
 5. Afterwards the host can click **Play again** (or **Rules** to change them), and the guest can
    click **Ask for rematch**. **Leave** ends the match for both.
 
-A room lasts as long as both players stay. Rematches use the same room. Codes never contain
+A room lasts as long as both players stay. Rematches use the same room. If the host loses the
+connection while waiting (for example by switching to a chat app on a phone), the game gets back
+into the same room by itself, with the same code. Codes never contain
 `0`, `O`, `1`, `I` or `L`, so they can't be misread.
 
 </details>
@@ -371,6 +372,7 @@ It stays this cheap because of three choices:
 
 - Only the websites in `ALLOWED_ORIGINS` may connect from a browser.
 - A room holds at most two players; room codes are random and unpredictable.
+- Only the host who made a room can return to it, using a secret key only that browser knows.
 - Messages over 10,000 characters, or more than 60 in 10 seconds, close the connection.
 - Each browser still checks every message from the opponent before using it.
 
@@ -452,29 +454,6 @@ match flow with a fake connection).
 [GitHub Actions](.github/workflows/ci.yml) runs the tests, a production build and `npm audit`
 on every pull request.
 
-## Deploying (Netlify)
-
-The settings live in [`netlify.toml`](netlify.toml), so the website form can stay at its defaults.
-
-1. Push to GitHub and merge into `main` (Netlify builds the branch you choose, here `main`).
-2. On Netlify: _Add new project_ → _Import from Git_ → pick the repository. Netlify reads
-   `netlify.toml`: build command `npm run build`, publish folder `dist/minesweeper/browser`,
-   Node 24.
-3. Optional: _Domain management_ → _Add a domain_. HTTPS is set up automatically.
-
-What the config does:
-
-- **Security headers** on every file: a strict Content-Security-Policy (only the site's own files
-  run or load, no inline scripts), no framing, no referrer, no camera/microphone/location,
-  https only, `nosniff`.
-- **Caching:** files with a hash in their name are cached for a year; `index.html` and
-  `early-theme.js` are always checked for a new version.
-- **CI** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the tests, the production
-  build and `npm audit` on every pull request. Dependabot opens update pull requests weekly.
-
-To try the production build locally: `npm run build`, then serve `dist/minesweeper/browser`.
-For online 1v1, also set up the relay: [Online 1v1 server](#online-1v1-server-cloudflare).
-
 ## Security notes
 
 The game has no accounts and talks to only one server, the 1v1 relay, so there is little to
@@ -491,7 +470,3 @@ attack. The few places that take outside data are checked:
 - **Everything is stored in the browser only** (`localStorage`): settings, best times, pictures.
 - `npm run start:lan` opens the _development_ server to your network. Use it only on a network you
   trust, and not for the public site.
-
----
-
-<p align="center"><sub>Built as a school project with Angular, TypeScript and SCSS.</sub></p>

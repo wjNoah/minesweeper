@@ -2,7 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { environment } from '../../environments/environment';
 import { MatchMessage, parseMatchMessage } from '../models/match.model';
 import { MatchTransport } from './match-transport';
-import { createRoomCode, normalizeRoomCode } from './room-code';
+import { createHostKey, createRoomCode, normalizeRoomCode } from './room-code';
 
 /**
  * idle → connecting → (host: waiting for the guest) → connected.
@@ -25,8 +25,18 @@ const CLOSE = {
 
 /** What the relay sends (not a game message): both players are in the room. */
 const PAIRED = 'paired';
+/** Used when the connection breaks without the relay saying why. */
+const CLOSE_ABNORMAL = 1006;
 /** Keeps the connection alive through Wi-Fi routers that drop silent connections. */
-const PING_INTERVAL_MS = 30_000;
+const PING_INTERVAL_MS = 15_000;
+/**
+ * A lost connection (Wi-Fi gone, laptop asleep) often closes nothing in the browser, so a
+ * match would hang forever. No answer to this many pings in a row means it is gone.
+ */
+const MAX_MISSED_PONGS = 2;
+/** A firewall can leave a connection attempt hanging for minutes. */
+const CONNECT_TIMEOUT_MS = 15_000;
+const RECONNECT_DELAY_MS = 2_000;
 /** A host waiting longer than this has probably forgotten the room. */
 const WAIT_LIMIT_MS = 15 * 60_000;
 /** A new room code is tried this often if a code happens to be in use already. */
@@ -58,18 +68,27 @@ export class ConnectionService implements MatchTransport {
   readonly role = signal<Role | null>(null);
   readonly roomCode = signal('');
   readonly error = signal('');
+  /** The waiting host lost the connection and is getting back into the room. */
+  readonly reconnecting = signal(false);
   /** False until the relay address is filled in (src/environments/environment.ts). */
   readonly isAvailable = environment.relayUrl !== '';
 
   private socket: WebSocket | null = null;
   private codeAttempts = 0;
+  private hostKey = '';
+  private missedPongs = 0;
   private pingTimer: ReturnType<typeof setInterval> | undefined;
   private waitTimer: ReturnType<typeof setTimeout> | undefined;
+  private connectTimer: ReturnType<typeof setTimeout> | undefined;
+  private retryTimer: ReturnType<typeof setTimeout> | undefined;
   private readonly listeners = new Set<(message: MatchMessage) => void>();
 
   /** Creates a room and waits for a guest. */
   host(): void {
+    this.cleanUp();
+    this.state.set('idle');
     this.codeAttempts = 1;
+    this.hostKey = createHostKey();
     this.open('host', createRoomCode());
   }
 
@@ -79,6 +98,8 @@ export class ConnectionService implements MatchTransport {
       this.fail(MESSAGES.invalidCode);
       return;
     }
+    this.cleanUp();
+    this.state.set('idle');
     this.open('guest', code);
   }
 
@@ -103,34 +124,56 @@ export class ConnectionService implements MatchTransport {
     this.error.set('');
   }
 
+  /** Also used to get back into the room, so a waiting host keeps showing the same code. */
   private open(role: Role, code: string): void {
-    this.cleanUp();
+    this.dropSocket();
     this.role.set(role);
     this.roomCode.set(code);
     this.error.set('');
-    this.state.set('connecting');
+    if (this.state() !== 'waiting') this.state.set('connecting');
 
-    const query = role === 'host' ? '?create' : '';
+    const query = role === 'host' ? `?create=${this.hostKey}` : '';
     const socket = new WebSocket(`${environment.relayUrl}/room/${code}${query}`);
     let opened = false;
     this.socket = socket;
+    this.connectTimer = setTimeout(() => this.onClosed(CLOSE_ABNORMAL, opened), CONNECT_TIMEOUT_MS);
 
     socket.onopen = () => {
       opened = true;
-      this.pingTimer = setInterval(() => socket.send('ping'), PING_INTERVAL_MS);
+      this.startPings(socket);
       if (role === 'host') {
+        clearTimeout(this.connectTimer);
+        this.reconnecting.set(false);
         this.state.set('waiting');
-        this.waitTimer = setTimeout(() => this.fail(MESSAGES.expired), WAIT_LIMIT_MS);
+        this.waitTimer ??= setTimeout(() => this.fail(MESSAGES.expired), WAIT_LIMIT_MS);
       }
     };
     socket.onmessage = (event: MessageEvent) => this.receive(event.data);
     socket.onclose = (event: CloseEvent) => this.onClosed(event.code, opened);
   }
 
+  private startPings(socket: WebSocket): void {
+    this.missedPongs = 0;
+    this.pingTimer = setInterval(() => {
+      if (this.missedPongs >= MAX_MISSED_PONGS) {
+        this.onClosed(CLOSE_ABNORMAL, true);
+        return;
+      }
+      this.missedPongs++;
+      socket.send('ping');
+    }, PING_INTERVAL_MS);
+  }
+
   private receive(data: unknown): void {
-    if (data === 'pong') return;
+    if (data === 'pong') {
+      this.missedPongs = 0;
+      return;
+    }
     if (data === PAIRED) {
+      clearTimeout(this.connectTimer);
       clearTimeout(this.waitTimer);
+      this.waitTimer = undefined;
+      this.reconnecting.set(false);
       this.state.set('connected');
       return;
     }
@@ -148,7 +191,8 @@ export class ConnectionService implements MatchTransport {
   /** Turns the relay's close code into what the player sees. */
   private onClosed(code: number, opened: boolean): void {
     const wasConnected = this.state() === 'connected';
-    this.cleanUp();
+    const wasWaiting = this.state() === 'waiting';
+    this.dropSocket();
     switch (code) {
       case CLOSE.codeTaken:
         // Someone else is using this code right now: quietly try another one.
@@ -170,7 +214,12 @@ export class ConnectionService implements MatchTransport {
         return this.fail(MESSAGES.tooMany);
     }
     if (wasConnected) {
+      this.cleanUp();
       this.state.set('closed');
+    } else if (wasWaiting) {
+      // The friend may be typing the code right now, so keep the room going.
+      this.reconnecting.set(true);
+      this.retryTimer = setTimeout(() => this.open('host', this.roomCode()), RECONNECT_DELAY_MS);
     } else {
       this.fail(opened ? MESSAGES.lost : MESSAGES.unreachable);
     }
@@ -183,8 +232,16 @@ export class ConnectionService implements MatchTransport {
   }
 
   private cleanUp(): void {
-    clearInterval(this.pingTimer);
+    this.dropSocket();
     clearTimeout(this.waitTimer);
+    this.waitTimer = undefined;
+    this.reconnecting.set(false);
+  }
+
+  private dropSocket(): void {
+    clearInterval(this.pingTimer);
+    clearTimeout(this.connectTimer);
+    clearTimeout(this.retryTimer);
     if (this.socket) {
       // Detach first, so closing on purpose isn't reported as a lost connection.
       this.socket.onopen = this.socket.onmessage = this.socket.onclose = null;

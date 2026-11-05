@@ -22,7 +22,13 @@
               </button>
             }
           </div>
-          <p class="status">Waiting for your friend to join…</p>
+          <p class="status">
+            {{
+              connection.reconnecting()
+                ? 'Connection lost, getting back into the room…'
+                : 'Waiting for your friend to join…'
+            }}
+          </p>
           <p class="hint">They click 1v1, then Join a room, and type the code.</p>
         }
 
@@ -43,6 +49,7 @@
                   @for (level of botLevels; track level) {
                     <button
                       type="button"
+                      [disabled]="match.isRacing()"
                       [attr.aria-pressed]="match.botLevel() === level"
                       (click)="match.setBotLevel(level)"
                     >
@@ -57,7 +64,9 @@
           }
           <section aria-labelledby="rules-title">
             <h3 id="rules-title">Rules</h3>
-            @if (!match.isHost()) {
+            @if (match.isRacing()) {
+              <p class="hint">A round is running. The rules can be changed after it.</p>
+            } @else if (!match.isHost()) {
               <p class="hint">The host chooses the rules.</p>
             }
             <div class="row choice">
@@ -66,7 +75,7 @@
                 @for (preset of presets; track preset.id) {
                   <button
                     type="button"
-                    [disabled]="!match.isHost()"
+                    [disabled]="!canEditRules()"
                     [attr.aria-pressed]="match.rules().preset === preset.id"
                     (click)="match.setRules({ preset: preset.id })"
                   >
@@ -83,7 +92,7 @@
               <input
                 type="checkbox"
                 role="switch"
-                [disabled]="!match.isHost()"
+                [disabled]="!canEditRules()"
                 [checked]="match.rules().noGuess"
                 (change)="setNoGuess($event)"
               />
@@ -95,7 +104,7 @@
                   @if (match.rules().mineRule === 'defeat') {
                     You lose the round. Otherwise the first to clear the board wins.
                   } @else {
-                    The mine is flagged for you and seconds are added. Lowest time wins.
+                    The mine is marked in red and seconds are added. Lowest time wins.
                   }
                 </span>
               </span>
@@ -103,7 +112,7 @@
                 @for (rule of mineRules; track rule.value) {
                   <button
                     type="button"
-                    [disabled]="!match.isHost()"
+                    [disabled]="!canEditRules()"
                     [attr.aria-pressed]="match.rules().mineRule === rule.value"
                     (click)="match.setRules({ mineRule: rule.value })"
                   >
@@ -119,7 +128,7 @@
                   @for (seconds of penaltyOptions; track seconds) {
                     <button
                       type="button"
-                      [disabled]="!match.isHost()"
+                      [disabled]="!canEditRules()"
                       [attr.aria-pressed]="match.rules().penaltySeconds === seconds"
                       (click)="match.setRules({ penaltySeconds: seconds })"
                     >
@@ -194,8 +203,15 @@
       @if (view() === 'connected') {
         <button type="button" class="button" (click)="match.leave()">Leave</button>
         @if (match.isHost()) {
-          <button type="button" class="button primary" (click)="startRound()">Start round</button>
-        } @else {
+          <button
+            type="button"
+            class="button primary"
+            [disabled]="match.isRacing()"
+            (click)="startRound()"
+          >
+            Start round
+          </button>
+        } @else if (!match.isRacing()) {
           <span class="hint">Waiting for the host to start…</span>
         }
       } @else {

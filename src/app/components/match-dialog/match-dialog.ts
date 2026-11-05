@@ -6,6 +6,7 @@ import {
   ElementRef,
   inject,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { BOT_LEVEL_IDS, BOT_LEVELS, BotLevel } from '../../models/bot.model';
@@ -44,6 +45,7 @@ export class MatchDialog {
   protected readonly view = computed(() =>
     this.match.isBot() ? 'connected' : this.connection.state(),
   );
+  protected readonly canEditRules = computed(() => this.match.isHost() && !this.match.isRacing());
   /** Screen readers read "K7XPM" as a word; "K 7 X P M" is read letter by letter. */
   protected readonly spelledCode = computed(
     () => `Room code ${[...this.connection.roomCode()].join(' ')}`,
@@ -63,6 +65,9 @@ export class MatchDialog {
       if (this.connection.state() === 'connected') {
         this.joining.set(false);
         this.codeDraft.set('');
+        // The host may have closed the dialog while waiting: show that the friend is here.
+        const dialog = this.dialog().nativeElement;
+        if (!dialog.open && untracked(this.match.phase) === 'lobby') dialog.showModal();
       }
     });
   }
