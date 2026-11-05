@@ -71,8 +71,16 @@
   <app-match-bar (openRules)="matchDialog.open()" />
   <app-board />
   <app-controls-hint />
+
+  <footer class="page-foot">
+    <p>Found a bug or have an idea?</p>
+    <button type="button" class="button" aria-haspopup="dialog" (click)="feedbackDialog.open()">
+      Send feedback
+    </button>
+  </footer>
 </main>
 
 <app-settings-dialog #settingsDialog />
 <app-match-dialog #matchDialog />
 <app-customize-dialog #customizeDialog />
+<app-feedback-dialog #feedbackDialog />

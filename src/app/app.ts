@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Board } from './components/board/board';
 import { ControlsHint } from './components/controls-hint/controls-hint';
 import { CustomizeDialog } from './components/customize-dialog/customize-dialog';
+import { FeedbackDialog } from './components/feedback-dialog/feedback-dialog';
 import { DifficultyPicker } from './components/difficulty-picker/difficulty-picker';
 import { GameHeader } from './components/game-header/game-header';
 import { MatchBar } from './components/match-bar/match-bar';
@@ -17,6 +18,7 @@ import { SettingsService } from './services/settings.service';
     ControlsHint,
     CustomizeDialog,
     DifficultyPicker,
+    FeedbackDialog,
     GameHeader,
     MatchBar,
     MatchDialog,

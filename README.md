@@ -33,6 +33,7 @@
 - [On your phone](#on-your-phone)
 - [1v1: a bot or a friend](#1v1-a-bot-or-a-friend)
 - [Online 1v1 server (Cloudflare)](#online-1v1-server-cloudflare)
+- [Feedback](#feedback)
 - [Project structure](#project-structure)
 - [How it works](#how-it-works)
 - [Testing](#testing)
@@ -59,7 +60,8 @@
   flagged". Numbers are never shown by colour alone, text contrast meets WCAG AA (4.5:1), and
   animations switch off if your system asks for reduced motion.
 - **Private.** No accounts and no tracking. Everything (settings, best times, pictures) stays in
-  your browser. The only network traffic is a 1v1 match against a friend.
+  your browser. The only network traffic is a 1v1 match against a friend, and feedback you choose
+  to send.
 
 ## Quick start
 
@@ -376,6 +378,22 @@ It stays this cheap because of three choices:
 - Messages over 10,000 characters, or more than 60 in 10 seconds, close the connection.
 - Each browser still checks every message from the opponent before using it.
 
+## Feedback
+
+**Send feedback** at the bottom of the page opens a short form: Bug, Idea or Other, a message and
+an optional email. It is sent to [Netlify Forms](https://docs.netlify.com/forms/setup/), so it needs
+no server of its own and no account for players.
+
+Setting it up (once):
+
+1. In Netlify, open _Forms_ and click _Enable form detection_.
+2. Deploy once more. Netlify finds the hidden form in `src/index.html` during the deploy.
+3. Messages now appear under _Forms_ → `feedback`. To also get an email for each one, add a form
+   notification under _Project configuration_ → _Notifications_.
+
+The form only works on the deployed site. With `npm start` it shows "could not be sent", because
+the development server has no Netlify behind it.
+
 ## Project structure
 
 ```
@@ -387,6 +405,7 @@ src/
 │   │   ├── settings.model.ts    settings, key bindings and their validation
 │   │   ├── appearance.model.ts  colour theme list
 │   │   ├── match.model.ts       1v1 rules, messages, who wins, message validation
+│   │   ├── feedback.model.ts    the feedback form: checks and how it is sent
 │   │   ├── bot.model.ts         the three bot strengths
 │   │   └── navigation.ts        arrow keys and W A S D to cursor steps
 │   ├── services/          State (signals) and logic
@@ -397,12 +416,14 @@ src/
 │   │   ├── match.service.ts     the 1v1 round: countdown, race, result, rematch
 │   │   ├── match-transport.ts   what an opponent must offer (a person or the bot)
 │   │   ├── connection.service.ts, room-code.ts   a person online, through the relay
+│   │   ├── feedback.service.ts  sends the feedback form to Netlify
 │   │   ├── bot.ts, bot-opponent.ts               the bot: its moves, and playing in real time
 │   │   └── image-resize.ts      shrinks uploaded pictures
 │   └── components/        Display only: they show state and emit events
 │       ├── board, cell, game-header, difficulty-picker, controls-hint
 │       ├── settings-dialog, customize-dialog, picture-picker
-│       └── match-dialog, match-bar
+│       ├── match-dialog, match-bar
+│       └── feedback-dialog
 ├── _board-themes.scss     the six colour themes (light and dark)
 ├── _dialog.scss           shared look of the dialogs
 └── styles.scss            design tokens, dark mode, shared controls
@@ -465,6 +486,9 @@ attack. The few places that take outside data are checked:
 - **1v1 messages** from the opponent must be whole numbers in a sane range and fit the board; the
   opponent cannot crash the game with bad positions. A modified browser can still lie about its
   time, which is fine for playing with friends.
+- **Feedback** goes to Netlify Forms and contains only what the player types. The email field is
+  optional, and a hidden trap field plus Netlify's spam filter keep most bots out. An email address
+  is personal data, so delete messages you no longer need.
 - **Pictures** are limited to PNG, JPEG, WebP and GIF up to 15 MB (no SVG), are re-encoded in the
   browser, and are saved as plain base64 data that is checked again whenever it is read.
 - **Everything is stored in the browser only** (`localStorage`): settings, best times, pictures.

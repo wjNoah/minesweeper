@@ -22,5 +22,12 @@
   <body>
     <app-root></app-root>
     <noscript>This game needs JavaScript. Please turn it on in your browser.</noscript>
+    <!-- Never shown. Netlify reads this when deploying to learn about the form in the feedback dialog. -->
+    <form name="feedback" data-netlify="true" netlify-honeypot="bot-field" hidden>
+      <input type="text" name="kind" />
+      <textarea name="message"></textarea>
+      <input type="email" name="email" />
+      <input type="text" name="bot-field" />
+    </form>
   </body>
 </html>
