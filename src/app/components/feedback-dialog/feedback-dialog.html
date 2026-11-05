@@ -1,0 +1,93 @@
+<dialog #dialog class="dialog" aria-labelledby="feedback-title" (click)="onDialogClick($event)">
+  <div class="panel">
+    <header class="head">
+      <h2 id="feedback-title">Send feedback</h2>
+      <button type="button" class="icon-button" aria-label="Close feedback" (click)="close()">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+      </button>
+    </header>
+
+    <div class="body">
+      @if (feedback.status() === 'sent') {
+        <div class="thanks" role="status">
+          <p class="thanks-title">Thanks for your feedback</p>
+          <p class="hint">It arrived and will be read.</p>
+        </div>
+      } @else {
+        <form id="feedback-form" novalidate (submit)="submit($event, botField.value)">
+          <div class="row choice">
+            <span class="label" id="feedback-kind-label">What is it about?</span>
+            <div class="segmented" role="group" aria-labelledby="feedback-kind-label">
+              @for (option of kinds; track option.id) {
+                <button
+                  type="button"
+                  [attr.aria-pressed]="kind() === option.id"
+                  (click)="kind.set(option.id)"
+                >
+                  {{ option.label }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <label class="field">
+            <span class="label">Your message</span>
+            <textarea
+              #messageInput
+              rows="5"
+              [maxLength]="maxMessage"
+              [value]="message()"
+              (input)="message.set(messageInput.value)"
+            ></textarea>
+          </label>
+
+          <label class="field">
+            <span class="label">Email (optional)</span>
+            <span class="hint">Only used to reply to you.</span>
+            <input
+              #emailInput
+              type="email"
+              autocomplete="email"
+              [maxLength]="maxEmail"
+              [value]="email()"
+              (input)="email.set(emailInput.value)"
+            />
+          </label>
+
+          <!-- For bots only: people never see this field, so anything in it means spam. -->
+          <div class="bot-field" aria-hidden="true">
+            <label>
+              Leave this empty
+              <input #botField type="text" name="bot-field" tabindex="-1" autocomplete="off" />
+            </label>
+          </div>
+
+          @if (inputError()) {
+            <p class="error" role="alert">{{ inputError() }}</p>
+          } @else if (feedback.status() === 'failed') {
+            <p class="error" role="alert">
+              It could not be sent. Check your internet connection and try again. Your text is still
+              here.
+            </p>
+          }
+        </form>
+      }
+    </div>
+
+    <footer class="foot">
+      @if (feedback.status() === 'sent') {
+        <button type="button" class="button primary" (click)="close()">Done</button>
+      } @else {
+        <button type="button" class="button" (click)="close()">Cancel</button>
+        <button
+          type="submit"
+          form="feedback-form"
+          class="button primary"
+          [disabled]="feedback.status() === 'sending'"
+        >
+          {{ feedback.status() === 'sending' ? 'Sending…' : 'Send' }}
+        </button>
+      }
+    </footer>
+  </div>
+</dialog>

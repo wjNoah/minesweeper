@@ -1,0 +1,52 @@
+form {
+  display: grid;
+  gap: 1rem;
+  padding-block: 1.25rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+textarea,
+input[type='email'] {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--paper);
+  color: var(--ink);
+  // 16px: smaller text makes iPhones zoom into the page when the field is tapped.
+  font: inherit;
+  font-size: 1rem;
+}
+
+textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+input[type='email'] {
+  min-height: 44px;
+}
+
+// Off screen rather than display: none, because some bots skip fields that are hidden that way.
+.bot-field {
+  position: absolute;
+  left: -100vw;
+}
+
+.thanks {
+  padding-block: 1.5rem;
+}
+
+.thanks-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.foot {
+  gap: 0.5rem;
+}
