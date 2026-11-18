@@ -29,27 +29,27 @@ const TOGGLES: readonly { key: ToggleKey; label: string; hint: string }[] = [
   {
     key: 'safeArea',
     label: 'Open an area on the first click',
-    hint: 'Off: only the clicked cell is guaranteed to be safe.',
+    hint: 'Off: only the clicked cell is guaranteed to be safe',
   },
   {
     key: 'chordOnClick',
     label: 'Click a number to open its neighbors',
-    hint: 'Off: use double-click, Shift + click or the reveal key instead.',
+    hint: 'Off: use double-click, Shift + click or the reveal key instead',
   },
   {
     key: 'highlightNeighbors',
     label: 'Highlight neighbors of a number',
-    hint: 'Shows which hidden cells a number touches.',
+    hint: 'Shows which hidden cells a number touches',
   },
   {
     key: 'haptics',
     label: 'Vibrate on long press',
-    hint: 'On phones that support it.',
+    hint: 'On phones that support it',
   },
   {
     key: 'showGuide',
     label: 'Show controls, info and feedback',
-    hint: 'Off: only the game is shown, with nothing below the board.',
+    hint: 'Off: only the game is shown, with nothing below the board',
   },
 ];
 

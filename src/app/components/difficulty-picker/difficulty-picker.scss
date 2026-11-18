@@ -24,10 +24,10 @@
 
   input {
     width: 4.75rem;
-    min-height: 42px;
-    padding: 0 0.6rem;
+    min-height: 40px;
+    padding: 0 0.5rem;
     border: 1px solid var(--line);
-    border-radius: 9px;
+    border-radius: 10px;
     background: var(--surface);
     font-variant-numeric: tabular-nums;
 
@@ -52,7 +52,7 @@
 
   .levels button {
     flex: 1;
-    padding: 0 0.4rem;
+    padding: 0 0.5rem;
   }
 
   .custom input {

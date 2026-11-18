@@ -17,19 +17,19 @@ export const BOT_LEVEL_IDS: readonly BotLevel[] = ['easy', 'medium', 'hard'];
 export const BOT_LEVELS: Record<BotLevel, BotSkill> = {
   easy: {
     label: 'Easy',
-    description: 'Like a casual player: about 40 s on Beginner, and now and then clicks a mine.',
+    description: 'Like a casual player: about 40 s on Beginner, and now and then clicks a mine',
     moveMs: 2300,
     mistakeChance: 0.006,
   },
   medium: {
     label: 'Medium',
-    description: 'Like a regular player: about 20 s on Beginner, and rarely slips.',
+    description: 'Like a regular player: about 20 s on Beginner, and rarely slips',
     moveMs: 1350,
     mistakeChance: 0.002,
   },
   hard: {
     label: 'Hard',
-    description: 'Like a strong player: about 12 s on Beginner, and never careless.',
+    description: 'Like a strong player: about 12 s on Beginner, and never careless',
     moveMs: 650,
     mistakeChance: 0,
   },

@@ -67,10 +67,10 @@
 }
 
 // Bigger cells for fingers on small screens: as large as fits 9 columns
-// (beginner) next to the page padding, board padding and gaps, at least 32px.
+// (beginner) next to the page padding, board padding, border and gaps, at least 32px.
 @media (max-width: 600px) {
   :root {
-    --cell-size: clamp(32px, calc((100vw - 1.5rem - 38px) / 9), calc(40px * var(--cell-scale)));
+    --cell-size: clamp(32px, calc((100vw - 1.5rem - 42px) / 9), calc(40px * var(--cell-scale)));
   }
 }
 
@@ -116,15 +116,15 @@ button {
 // Shared segmented control (difficulty tabs, reveal/flag switch).
 .segmented {
   display: inline-flex;
-  padding: 3px;
-  border-radius: 9px;
+  padding: 2px;
+  border-radius: 10px;
   background: var(--track);
 
   button {
     min-height: 36px;
-    padding: 0 0.9rem;
+    padding: 0 1rem;
     border: 0;
-    border-radius: 7px;
+    border-radius: 8px;
     background: transparent;
     color: var(--ink-muted);
     font-size: 0.875rem;
@@ -158,10 +158,10 @@ button {
 }
 
 .button {
-  min-height: 42px;
-  padding: 0 1.1rem;
+  min-height: 40px;
+  padding: 0 1rem;
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: 10px;
   background: var(--surface);
   font-size: 0.875rem;
   font-weight: 600;
@@ -195,7 +195,7 @@ kbd {
   padding: 0 0.35em;
   border: 1px solid var(--line);
   border-bottom-width: 2px;
-  border-radius: 5px;
+  border-radius: 4px;
   background: var(--surface);
   color: var(--ink);
   font: 500 0.75rem / 1.5 var(--font);

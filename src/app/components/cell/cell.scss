@@ -37,13 +37,14 @@
   box-shadow: inset 0 0 0 2px var(--ink-muted);
 }
 
-// Hint: a pulsing ring, green for "open this", red for "flag this" or "remove this flag".
+// Hint: a ring that pulses twice to catch the eye, then stays. Green for "open this",
+// red for "flag this" or "remove this flag".
 // The status message says the same in words. .cell raises specificity above :focus-visible.
 .cell[data-hint] {
   z-index: 1;
   outline: 3px solid var(--success);
   outline-offset: 1px;
-  animation: hint-pulse 1.2s ease-in-out infinite;
+  animation: hint-pulse 1.2s ease-in-out 2;
 }
 
 .cell[data-hint='mine'],
