@@ -11,9 +11,30 @@ import {
 import { ImageError } from './image-resize';
 
 const TINY_IMAGE = 'data:image/png;base64,iVBORw0KGgo=';
+
+/** The test browser (jsdom) has no real pictures, so this plays the browser's part. */
+function stubPictureDecoding(): void {
+  vi.stubGlobal(
+    'createImageBitmap',
+    vi.fn().mockResolvedValue({ width: 100, height: 100, close: () => undefined }),
+  );
+  const context = {
+    drawImage: () => undefined,
+    getImageData: () => ({ data: new Uint8ClampedArray([0, 0, 0, 255]) }),
+  };
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+    context as unknown as ImageBitmapRenderingContext,
+  );
+  vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue(TINY_IMAGE);
+}
 const root = document.documentElement;
 
 describe('AppearanceService', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
   beforeEach(() => {
     localStorage.clear();
     delete root.dataset['boardTheme'];
@@ -60,6 +81,41 @@ describe('AppearanceService', () => {
 
     expect(localStorage.getItem(PAGE_IMAGE_KEY)).toBeNull();
     expect(root.dataset['pageImage']).toBeUndefined();
+  });
+
+  it('saves a chosen picture and shows it', async () => {
+    stubPictureDecoding();
+    const service = TestBed.inject(AppearanceService);
+    await service.setPageImage(new File(['x'], 'a.png', { type: 'image/png' }));
+    TestBed.tick();
+
+    expect(service.pageImage()).toBe(TINY_IMAGE);
+    expect(localStorage.getItem(PAGE_IMAGE_KEY)).toBe(TINY_IMAGE);
+    expect(root.dataset['pageImage']).toBe('on');
+  });
+
+  it('explains when a picture does not fit in storage, and keeps the old one', async () => {
+    stubPictureDecoding();
+    localStorage.setItem(PAGE_IMAGE_KEY, 'data:image/png;base64,AAAA');
+    const service = TestBed.inject(AppearanceService);
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
+
+    const file = new File(['x'], 'a.png', { type: 'image/png' });
+    await expect(service.setPageImage(file)).rejects.toThrow('too large to save');
+    expect(service.pageImage()).toBe('data:image/png;base64,AAAA');
+  });
+
+  it('still removes a picture from the page when storage is blocked', () => {
+    localStorage.setItem(FLAG_IMAGE_KEY, TINY_IMAGE);
+    const service = TestBed.inject(AppearanceService);
+    vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+
+    expect(() => service.removeFlagImage()).not.toThrow();
+    expect(service.flagImage()).toBeNull();
   });
 
   it('rejects files that are not images', async () => {

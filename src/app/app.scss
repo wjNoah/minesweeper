@@ -10,9 +10,10 @@
 .top,
 app-game-header,
 app-controls-hint,
+app-about,
 .page-foot {
-  // Wide enough for the title, the difficulty tabs and four tool buttons in one row.
-  width: min(100%, 46rem);
+  // Wide enough for the title, the difficulty tabs and four tool buttons in one row (768px).
+  width: min(100%, 48rem);
 }
 
 .page-foot {
@@ -61,6 +62,7 @@ h1 {
   letter-spacing: -0.02em;
   // Same height as the difficulty tabs, so both line up when the custom form opens.
   line-height: 42px;
+  white-space: nowrap;
 }
 
 .tools {
@@ -105,8 +107,8 @@ h1 {
 // the panel, which measured more than twice as slow.
 :host-context([data-page-image]) .app {
   width: fit-content;
-  // The content column (46rem) plus this panel's side padding (2 × 1.25rem).
-  min-width: min(100% - 2rem, 48.5rem);
+  // The content column (48rem) plus this panel's side padding (2 × 1.25rem).
+  min-width: min(100% - 2rem, 50.5rem);
   max-width: calc(100% - 2rem);
   margin: 1.5rem auto;
   border: 1px solid var(--line);
@@ -121,6 +123,14 @@ h1 {
     padding: 1.5rem 0.75rem 3rem;
   }
 
+  // Phone: the name as a two-line wordmark beside the buttons, about as tall as they are.
+  h1 {
+    font-size: 1.25rem;
+    line-height: 1.05;
+    white-space: normal;
+    align-self: center;
+  }
+
   // Same total side space as without a picture, so the board still fits.
   :host-context([data-page-image]) .app {
     min-width: 0;
@@ -132,9 +142,9 @@ h1 {
   }
 }
 
-// Title, difficulty tabs and four tool buttons need about 760px in one row.
+// Title, difficulty tabs and four tool buttons need about 768px in one row.
 // Narrower windows put the tabs on their own row below the title.
-@media (max-width: 800px) {
+@media (max-width: 840px) {
   .top {
     grid-template-areas:
       'title tools'

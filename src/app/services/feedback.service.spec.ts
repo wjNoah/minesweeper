@@ -78,6 +78,28 @@ describe('feedback', () => {
       expect(service.status()).toBe('failed');
     });
 
+    it('reset clears the result, so the form can be used again', async () => {
+      fetchMock.mockResolvedValue(new Response('', { status: 200 }));
+      await service.send(FEEDBACK);
+      service.reset();
+      expect(service.status()).toBe('idle');
+    });
+
+    it('gives up after 15 seconds on a connection that never answers', async () => {
+      const timeout = vi.spyOn(AbortSignal, 'timeout').mockReturnValue(AbortSignal.timeout(1));
+      // Like a real request: it only ends when the signal says so.
+      fetchMock.mockImplementation(
+        (_, init) =>
+          new Promise((_, reject) =>
+            init?.signal?.addEventListener('abort', () => reject(new Error('aborted'))),
+          ),
+      );
+      expect(await service.send(FEEDBACK)).toBe(false);
+      expect(service.status()).toBe('failed');
+      expect(timeout).toHaveBeenCalledWith(15_000);
+      timeout.mockRestore();
+    });
+
     it('does not send twice while sending', async () => {
       let finish = (_: Response) => {};
       fetchMock.mockReturnValue(new Promise((resolve) => (finish = resolve)));

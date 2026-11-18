@@ -17,7 +17,8 @@ import {
 import { BestTimesService } from '../../services/best-times.service';
 import { SettingsService } from '../../services/settings.service';
 
-type ToggleKey = 'noGuess' | 'safeArea' | 'chordOnClick' | 'highlightNeighbors' | 'haptics';
+type ToggleKey =
+  'noGuess' | 'safeArea' | 'chordOnClick' | 'highlightNeighbors' | 'haptics' | 'showGuide';
 
 const TOGGLES: readonly { key: ToggleKey; label: string; hint: string }[] = [
   {
@@ -44,6 +45,11 @@ const TOGGLES: readonly { key: ToggleKey; label: string; hint: string }[] = [
     key: 'haptics',
     label: 'Vibrate on long press',
     hint: 'On phones that support it.',
+  },
+  {
+    key: 'showGuide',
+    label: 'Show controls, info and feedback',
+    hint: 'Off: only the game is shown, with nothing below the board.',
   },
 ];
 

@@ -1,15 +1,59 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <script defer src="https://cloud.umami.is/script.js" data-website-id="9c54d3c8-a97f-4d4c-9f26-43a589c35149"></script>
     <meta charset="utf-8" />
-    <title>Minesweeper</title>
+    <title>Minesweeper Duel: Play Free Online, 1v1 and No-Guess Mode</title>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="Minesweeper in your browser: no-guessing boards, hints, themes, keyboard play and a 1v1 mode against a friend or a bot. No account needed."
+      content="Play Minesweeper free in your browser. Race a friend 1v1 with a room code or play against a bot, with no-guessing boards, hints and themes. No sign-up."
     />
+    <!-- The one address Google should list, also when the site is reached another way. -->
+    <link rel="canonical" href="https://minesweeperduel.com/" />
+
+    <!-- The preview when the link is shared in a chat or on social media. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://minesweeperduel.com/" />
+    <meta property="og:site_name" content="Minesweeper Duel" />
+    <meta property="og:title" content="Minesweeper Duel: Play Free Online, 1v1 and No-Guess Mode" />
+    <meta
+      property="og:description"
+      content="Race a friend on the same board, play a bot, or solve no-guessing boards. Free, in your browser, no sign-up."
+    />
+    <meta property="og:image" content="https://minesweeperduel.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Minesweeper Duel: a board in progress next to the game's name"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Tells search engines what this page is. It is data, not code, so it never runs. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "VideoGame",
+        "name": "Minesweeper Duel",
+        "url": "https://minesweeperduel.com/",
+        "description": "Minesweeper in the browser with 1v1 races against a friend or a bot, no-guessing boards, hints and themes.",
+        "genre": ["Puzzle", "Logic"],
+        "gamePlatform": "Web browser",
+        "applicationCategory": "GameApplication",
+        "operatingSystem": "Any (runs in the browser)",
+        "playMode": ["SinglePlayer", "MultiPlayer"],
+        "inLanguage": "en",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
+      }
+    </script>
+
+    <script
+      defer
+      src="https://cloud.umami.is/script.js"
+      data-website-id="9c54d3c8-a97f-4d4c-9f26-43a589c35149"
+    ></script>
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#f5f3ee" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#151513" media="(prefers-color-scheme: dark)" />
@@ -22,7 +66,13 @@
   </head>
   <body>
     <app-root></app-root>
-    <noscript>This game needs JavaScript. Please turn it on in your browser.</noscript>
+    <noscript>
+      <h1>Minesweeper Duel</h1>
+      <p>
+        Free Minesweeper in your browser, with 1v1 races against a friend or a bot, no-guessing
+        boards and hints. The game needs JavaScript. Please turn it on in your browser to play.
+      </p>
+    </noscript>
     <!-- Never shown. Netlify reads this when deploying to learn about the form in the feedback dialog. -->
     <form name="feedback" data-netlify="true" netlify-honeypot="bot-field" hidden>
       <input type="text" name="kind" />

@@ -23,6 +23,31 @@ describe('SettingsService', () => {
     expect(TestBed.inject(SettingsService).settings().chordOnClick).toBe(false);
   });
 
+  it('the system theme removes the forced theme from the page', () => {
+    const service = TestBed.inject(SettingsService);
+    service.update({ theme: 'dark' });
+    TestBed.tick();
+    service.update({ theme: 'system' });
+    TestBed.tick();
+    expect(document.documentElement.dataset['theme']).toBeUndefined();
+  });
+
+  it('starts with the defaults when the saved settings are broken', () => {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, '{not json');
+    expect(TestBed.inject(SettingsService).settings().keys.flag).toBe('f');
+  });
+
+  it('settings still apply for this visit when storage is full or blocked', () => {
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
+    const service = TestBed.inject(SettingsService);
+    service.update({ theme: 'dark' });
+    expect(() => TestBed.tick()).not.toThrow();
+    expect(document.documentElement.dataset['theme']).toBe('dark');
+    setItem.mockRestore();
+  });
+
   it('toggleTheme switches between light and dark', () => {
     const service = TestBed.inject(SettingsService);
     service.update({ theme: 'light' });

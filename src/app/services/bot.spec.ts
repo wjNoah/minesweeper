@@ -89,6 +89,30 @@ describe('the bot', () => {
     expect(state.board[0][0].isFlagged).toBe(true);
   });
 
+  it('wins after a penalty too, when the last safe cell opens', () => {
+    let state: BotState = {
+      board: revealCell(gridFromLayout(['*.']), 0, 1),
+      minesHit: 0,
+      result: null,
+    };
+    expect(state.result).toBeNull();
+    state = applyBotMove(state, { kind: 'slip', row: 0, col: 0 }, 'penalty');
+    expect(state.minesHit).toBe(1);
+    expect(state.result).toBe('cleared');
+  });
+
+  it('a flag move flags the cell and opens nothing', () => {
+    const board = revealCell(gridFromLayout(['*.', '..']), 1, 1);
+    const state = applyBotMove(
+      { board, minesHit: 0, result: null },
+      { kind: 'flag', row: 0, col: 0 },
+      'defeat',
+    );
+    expect(state.board[0][0].isFlagged).toBe(true);
+    expect(state.board[0][0].isRevealed).toBe(false);
+    expect(state.result).toBeNull();
+  });
+
   it('flags quickly and hesitates before a guess', () => {
     const at = (kind: BotMove['kind']) =>
       botMoveDelay({ kind, row: 0, col: 0 }, careful, () => 0.5);

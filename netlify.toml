@@ -10,18 +10,27 @@
   # Angular 22 needs Node 22.22.3, 24.15 or newer; Netlify's default can be older.
   NODE_VERSION = "24"
 
+# The site is also reachable at its Netlify address. Sending those visitors to the real domain
+# means search engines see one site, not two copies. (Deploy previews keep their own address.)
+[[redirects]]
+  from = "https://sweepduel.netlify.app/*"
+  to = "https://minesweeperduel.com/:splat"
+  status = 301
+  force = true
+
 # ---------------------------------------------------------------------------
 # Security headers for every page and file
 # ---------------------------------------------------------------------------
 [[headers]]
   for = "/*"
   [headers.values]
-    # Only this site's own files may run or load. No third-party scripts, fonts or requests.
-    #  - script-src 'self': no inline scripts (the start-up script is public/early-theme.js).
+    # Only this site's own files may run or load, plus the two services named below.
+    #  - script-src: no inline scripts (the start-up script is public/early-theme.js), and the
+    #    Umami visitor statistics script.
     #  - style-src 'unsafe-inline': Angular adds each component's CSS as an inline <style> tag.
     #  - img-src data: : the user's own pictures are stored as data URLs.
-    #  - connect-src: the only server the game talks to is the 1v1 relay (README: "Online 1v1 server").
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' wss://minesweeper-relay.notschi1504.workers.dev; object-src 'none'; worker-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+    #  - connect-src: the 1v1 relay (README: "Online 1v1 server") and Umami's statistics.
+    Content-Security-Policy = "default-src 'self'; script-src 'self' https://cloud.umami.is; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' wss://minesweeper-relay.notschi1504.workers.dev https://cloud.umami.is; object-src 'none'; worker-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
     # Browsers must not guess file types (stops uploaded or odd files being run as scripts).
     X-Content-Type-Options = "nosniff"
     # Nobody may show the game inside another page (clickjacking). Old browsers use this header,

@@ -93,11 +93,12 @@ describe('placeMines', () => {
     expect(countMines(board)).toBe(8);
   });
 
-  it('can keep only the clicked cell safe when safeArea is off', () => {
-    // 3x3 board, 8 mines: possible only if the neighbors of the click may hold mines.
-    const board = placeMines(createEmptyBoard(3, 3), 8, 0, 0, seededRandom(2), false);
-    expect(board[0][0].hasMine).toBe(false);
-    expect(getNeighbors(board, 0, 0).every((n) => n.hasMine)).toBe(true);
+  it('with safeArea off, keeps only the clicked cell safe, also when there is plenty of room', () => {
+    const boards = Array.from({ length: 30 }, (_, seed) =>
+      placeMines(createEmptyBoard(9, 9), 10, 4, 4, seededRandom(seed), false),
+    );
+    expect(boards.every((board) => !board[4][4].hasMine)).toBe(true);
+    expect(boards.some((board) => getNeighbors(board, 4, 4).some((n) => n.hasMine))).toBe(true);
   });
 
   it('throws when there are more mines than free cells', () => {
@@ -160,6 +161,11 @@ describe('revealCell', () => {
     const next = revealCell(grid, 0, 0);
     expect(next[2][2].isRevealed).toBe(false);
     expect(revealedMap(next)).toEqual(['ooo', 'ooo', 'oo#']);
+  });
+
+  it('opening a mine does not open its neighbors, even if no other mine is near', () => {
+    const next = revealCell(gridFromLayout(['*..', '...', '...']), 0, 0);
+    expect(revealedMap(next)).toEqual(['o##', '###', '###']);
   });
 
   it('handles a large empty board without a stack overflow', () => {
@@ -229,8 +235,10 @@ describe('chordCell', () => {
     expect(isLost(chordCell(grid, 1, 1))).toBe(true);
   });
 
-  it('does nothing on hidden cells', () => {
-    const grid = gridFromLayout(layout);
+  it('does nothing on hidden cells, even if the flags around them add up', () => {
+    let grid = gridFromLayout(layout);
+    grid = toggleFlag(grid, 0, 0);
+    grid = toggleFlag(grid, 2, 2);
     expect(chordCell(grid, 1, 1)).toBe(grid);
   });
 });
@@ -272,6 +280,15 @@ describe('coverHitMines', () => {
     expect(covered[0][0].isRevealed).toBe(false);
     expect(covered[0][0].isFlagged).toBe(true);
     expect(covered[0][0].isHit).toBe(true);
+    expect(isLost(covered)).toBe(false);
+  });
+
+  it('counts every mine when one chord hits several', () => {
+    let grid = revealCell(gridFromLayout(['*.*', '...', '...']), 0, 1); // shows 2
+    grid = toggleFlag(grid, 1, 0); // two wrong flags, so the chord opens both mines
+    grid = toggleFlag(grid, 1, 1);
+    const { grid: covered, hit } = coverHitMines(chordCell(grid, 0, 1));
+    expect(hit).toBe(2);
     expect(isLost(covered)).toBe(false);
   });
 

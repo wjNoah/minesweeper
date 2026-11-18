@@ -465,14 +465,28 @@ netlify.toml               deployment settings and security headers
 npm test
 ```
 
-runs the unit tests with Vitest (add `-- --watch=false` for a single run). They cover the rules
-of the game (mine placement, first-click safety, neighbour counts, flood fill, flagging, chording,
-win and lose), the solver and hints, the timer and best times, settings and key rebinding, themes
-and pictures, the cell icons, the bot (logic-only solving, guessing, slips, speeds, real-time play), and
-the 1v1 pieces (room codes, the connection with a fake WebSocket, message checks, who wins, the
-match flow with a fake connection).
+runs the unit tests with Vitest (add `-- --watch=false` for a single run). They cover:
 
-[GitHub Actions](.github/workflows/ci.yml) runs the tests, a production build and `npm audit`
+- **The rules:** mine placement, first-click safety, neighbour counts, flood fill, flagging,
+  chording, win and lose, the timer and best times.
+- **The solver and the bot:** no-guessing boards, hints, logic-only solving, guessing and slips,
+  and playing a whole round in real time.
+- **1v1:** who wins, message checks against a modified opponent, the match flow with a fake
+  connection, room codes, and the connection with a fake WebSocket (lost connections, reconnecting).
+- **Every way to play:** click, Shift + click, right-click, long press, double-click and the full
+  keyboard, tested on the real components, along with the screen-reader labels.
+- **Settings, looks and feedback:** key rebinding, themes, pictures, the feedback form, and what
+  happens when browser storage is full or blocked.
+
+```bash
+npm run test:relay
+```
+
+tests the relay over real WebSockets on Cloudflare's local runtime: pairing, limits, a host coming
+back, and rooms waking up from hibernation. It takes about a minute, and `npx` downloads Wrangler
+the first time. It needs no Cloudflare account.
+
+[GitHub Actions](.github/workflows/ci.yml) runs the unit tests, a production build and `npm audit`
 on every pull request.
 
 ## Security notes

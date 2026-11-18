@@ -1,13 +1,16 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   ElementRef,
   inject,
   signal,
   untracked,
 } from '@angular/core';
+import { fitCellSize } from '../../models/board-fit';
 import { AppearanceService } from '../../services/appearance.service';
 import { cursorStep, Position } from '../../models/navigation';
 import { getNeighbors } from '../../services/board-logic';
@@ -22,7 +25,11 @@ import { Cell } from '../cell/cell';
   templateUrl: './board.html',
   styleUrl: './board.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(document:keydown)': 'onKeydown($event)' },
+  host: {
+    '(document:keydown)': 'onKeydown($event)',
+    '(window:resize)': 'scheduleFit()',
+    '[style.--cell-size.px]': 'fittedCellSize()',
+  },
 })
 export class Board {
   protected readonly game = inject(GameService);
@@ -48,6 +55,11 @@ export class Board {
   private readonly hovered = signal<Position | null>(null);
   private readonly focusInBoard = signal(false);
 
+  /** With nothing shown below the board, the cells grow to fill the screen. */
+  private readonly fillScreen = computed(() => !this.settings.settings().showGuide);
+  /** Cell size in px while filling the screen; null keeps the normal size from the CSS. */
+  protected readonly fittedCellSize = signal<number | null>(null);
+
   /** Hidden neighbors of the number under the pointer or keyboard cursor, as "row,col". */
   private readonly highlighted = computed(() => {
     const none = new Set<string>();
@@ -65,6 +77,23 @@ export class Board {
   });
 
   constructor() {
+    // Size again when the setting, the board size or the normal cell size changes.
+    effect(() => {
+      this.fillScreen();
+      this.game.config();
+      this.settings.settings().cellScale;
+      untracked(() => this.scheduleFit());
+    });
+
+    // Anything above the board changing height (the 1v1 bar, the custom size form) moves it.
+    afterNextRender(() => {
+      const page = this.host.nativeElement.parentElement;
+      if (!page || typeof ResizeObserver !== 'function') return;
+      const observer = new ResizeObserver(() => this.scheduleFit());
+      observer.observe(page);
+      inject(DestroyRef).onDestroy(() => observer.disconnect());
+    });
+
     // Move the keyboard cursor to a new hint and scroll it into view (large boards on phones).
     effect(() => {
       const hint = this.game.hint();
@@ -161,6 +190,44 @@ export class Board {
       return;
     }
     if (key === ' ') event.preventDefault();
+  }
+
+  /** Measures once Angular has updated the page, when sizes are final. */
+  protected scheduleFit(): void {
+    setTimeout(() => this.fitToScreen());
+  }
+
+  private fitToScreen(): void {
+    const page = this.host.nativeElement.parentElement;
+    const board = this.host.nativeElement.querySelector<HTMLElement>('.board');
+    if (!this.fillScreen() || !page || !board) {
+      this.fittedCellSize.set(null);
+      return;
+    }
+    const pageStyle = getComputedStyle(page);
+    const boardStyle = getComputedStyle(board);
+    const px = (value: string) => parseFloat(value) || 0;
+
+    // From the board's top to the bottom of the window, minus the page's own space below it.
+    const top = this.host.nativeElement.getBoundingClientRect().top + window.scrollY;
+    const below = px(pageStyle.paddingBottom) + px(pageStyle.marginBottom);
+    const width = page.clientWidth - px(pageStyle.paddingLeft) - px(pageStyle.paddingRight);
+    const frame =
+      px(boardStyle.paddingLeft) +
+      px(boardStyle.paddingRight) +
+      px(boardStyle.borderLeftWidth) +
+      px(boardStyle.borderRightWidth);
+
+    const { rows, cols } = this.game.config();
+    const normal = 32 * this.settings.settings().cellScale;
+    this.fittedCellSize.set(
+      fitCellSize(
+        { width, height: window.innerHeight - top - below },
+        { rows, cols },
+        frame,
+        normal,
+      ),
+    );
   }
 
   private moveCursor(step: Position): void {

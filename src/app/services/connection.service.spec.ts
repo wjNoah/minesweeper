@@ -110,6 +110,38 @@ describe('ConnectionService', () => {
     expect(latest().sent).toEqual([]);
   });
 
+  it('is closed when the opponent says goodbye', () => {
+    const received: MatchMessage[] = [];
+    connection.onMessage((message) => received.push(message));
+    connection.join('K7XPM');
+    latest().open();
+    latest().receive('paired');
+
+    latest().receive('{"type":"leave"}');
+    expect(connection.state()).toBe('closed');
+    expect(received).toEqual([]);
+  });
+
+  it('stops passing messages to a listener that was removed', () => {
+    const received: MatchMessage[] = [];
+    const stop = connection.onMessage((message) => received.push(message));
+    connection.join('K7XPM');
+    latest().open();
+    latest().receive('paired');
+    stop();
+    latest().receive('{"type":"rematch"}');
+    expect(received).toEqual([]);
+  });
+
+  it('explains being disconnected for sending too much', () => {
+    connection.join('K7XPM');
+    latest().open();
+    latest().receive('paired');
+    latest().closeFromServer(4029);
+    expect(connection.state()).toBe('failed');
+    expect(connection.error()).toContain('too many messages');
+  });
+
   it('explains why the relay refused to join', () => {
     connection.join('K7XPM');
     latest().open();
@@ -144,6 +176,18 @@ describe('ConnectionService', () => {
     expect(latest().url).not.toBe(first.url);
   });
 
+  it('gives up after a few codes instead of trying forever', () => {
+    connection.host();
+    latest().open();
+    latest().closeFromServer(4009);
+    latest().open();
+    latest().closeFromServer(4009);
+    latest().open();
+    latest().closeFromServer(4009);
+    expect(FakeSocket.all.length).toBe(3);
+    expect(connection.state()).toBe('failed');
+  });
+
   it('is closed when the opponent leaves', () => {
     connection.join('K7XPM');
     latest().open();
@@ -161,6 +205,29 @@ describe('ConnectionService', () => {
     expect(socket.sent).toContain('{"type":"leave"}');
     expect(socket.closedByClient).toBe(true);
     expect(connection.state()).toBe('idle');
+    expect(connection.role()).toBeNull();
+    expect(connection.roomCode()).toBe('');
+  });
+
+  it('stops pinging after leaving', () => {
+    connection.join('K7XPM');
+    const socket = latest();
+    socket.open();
+    socket.receive('paired');
+    connection.close();
+    vi.advanceTimersByTime(60_000);
+    expect(socket.sent).not.toContain('ping');
+  });
+
+  it('a host whose friend joined is not closed by the 15-minute limit', () => {
+    connection.host();
+    latest().open();
+    latest().receive('paired');
+    for (let i = 0; i < 70; i++) {
+      vi.advanceTimersByTime(15_000);
+      latest().receive('pong');
+    }
+    expect(connection.state()).toBe('connected');
   });
 
   it('keeps the connection alive with pings', () => {

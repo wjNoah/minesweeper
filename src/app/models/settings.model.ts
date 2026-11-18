@@ -15,6 +15,8 @@ export interface Settings {
   /** Mark the hidden neighbors of the number under the pointer or keyboard cursor. */
   highlightNeighbors: boolean;
   haptics: boolean;
+  /** Everything below the board: controls, text about the game, feedback. Off leaves only the game. */
+  showGuide: boolean;
   /** Values are KeyboardEvent.key in lower case, so they follow the user's keyboard layout. */
   keys: KeyBindings;
 }
@@ -27,6 +29,7 @@ export const DEFAULT_SETTINGS: Settings = {
   chordOnClick: true,
   highlightNeighbors: true,
   haptics: true,
+  showGuide: true,
   keys: { flag: 'f', reveal: ' ', newGame: 'r', flagMode: 'm', hint: 'h' },
 };
 
@@ -102,6 +105,7 @@ export function parseSettings(value: unknown): Settings {
     chordOnClick: bool('chordOnClick', DEFAULT_SETTINGS.chordOnClick),
     highlightNeighbors: bool('highlightNeighbors', DEFAULT_SETTINGS.highlightNeighbors),
     haptics: bool('haptics', DEFAULT_SETTINGS.haptics),
+    showGuide: bool('showGuide', DEFAULT_SETTINGS.showGuide),
     keys: parseKeys(stored['keys']),
   };
 }

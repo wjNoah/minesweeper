@@ -53,6 +53,8 @@ Thumbs.db
 .claude
 CLAUDE.md
 docs
+.agents
+skills-lock.json
 
 # Local tool config
 .mcp.json
