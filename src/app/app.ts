@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { About } from './components/about/about';
 import { Board } from './components/board/board';
 import { ControlsHint } from './components/controls-hint/controls-hint';
 import { CustomizeDialog } from './components/customize-dialog/customize-dialog';
@@ -14,6 +15,7 @@ import { SettingsService } from './services/settings.service';
 @Component({
   selector: 'app-root',
   imports: [
+    About,
     Board,
     ControlsHint,
     CustomizeDialog,

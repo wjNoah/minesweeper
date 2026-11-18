@@ -20,6 +20,12 @@ describe('parseSettings', () => {
     expect(settings.safeArea).toBe(true);
   });
 
+  it('shows the controls and info unless the player turned them off', () => {
+    expect(parseSettings({}).showGuide).toBe(true);
+    expect(parseSettings({ showGuide: false }).showGuide).toBe(false);
+    expect(parseSettings({ showGuide: 'no' }).showGuide).toBe(true);
+  });
+
   it('falls back to default keys when two actions share a key', () => {
     const settings = parseSettings({
       keys: { flag: 'x', reveal: 'x', newGame: 'r', flagMode: 'm' },

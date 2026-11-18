@@ -1,0 +1,48 @@
+:host {
+  display: grid;
+  gap: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+
+section {
+  display: grid;
+  gap: 0.5rem;
+}
+
+h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+p,
+ul,
+dd {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+ul {
+  display: grid;
+  gap: 0.25rem;
+  padding-left: 1.25rem;
+}
+
+dl {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+dt {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+
+  &:first-child {
+    margin-top: 0;
+  }
+}

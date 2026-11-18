@@ -1,11 +1,35 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { MatchMessage } from '../models/match.model';
+import { MatchMessage, MatchRules } from '../models/match.model';
+import { gridWithMines } from './board-logic';
 import { ConnectionService, ConnectionState, Role } from './connection.service';
 import { GameService } from './game.service';
 import { MatchService } from './match.service';
+import { isSolvableWithoutGuessing } from './solver';
 
-/** Stands in for the WebRTC connection: records what is sent, lets tests deliver messages. */
+function seededRandom(seed: number): () => number {
+  let state = seed;
+  return () => (state = (state * 16807) % 2147483647) / 2147483647;
+}
+
+const RULES: MatchRules = {
+  preset: 'beginner',
+  noGuess: false,
+  mineRule: 'defeat',
+  penaltySeconds: 10,
+};
+
+/**
+ * Mines at the even cells of the top and bottom rows. From the middle, the opening reveals 63
+ * of the 71 safe cells; the 8 cells between the mines stay hidden, so moves change the count.
+ */
+const POCKET_MINES = [0, 2, 4, 6, 8, 72, 74, 76, 78, 80];
+const POCKET_CELLS = [1, 3, 5, 7].flatMap((col) => [
+  { row: 0, col },
+  { row: 8, col },
+]);
+
+/** Stands in for the connection to the other player: records what is sent, lets tests deliver messages. */
 class FakeConnection {
   readonly state = signal<ConnectionState>('connected');
   readonly role = signal<Role | null>('host');
@@ -39,9 +63,30 @@ describe('MatchService', () => {
       providers: [{ provide: ConnectionService, useValue: connection }],
     });
     match = TestBed.inject(MatchService);
+    match.random = seededRandom(11);
     game = TestBed.inject(GameService);
     TestBed.tick();
   }
+
+  /** A guest receives a round on the board with hidden pockets, and the countdown ends. */
+  function startPocketRound(rules: Partial<MatchRules> = {}, round = 1): void {
+    connection.deliver({
+      type: 'start',
+      round,
+      rules: { ...RULES, ...rules },
+      mines: POCKET_MINES,
+      start: { row: 4, col: 4 },
+    });
+    vi.advanceTimersByTime(3000);
+    TestBed.tick();
+  }
+
+  function play(row: number, col: number): void {
+    game.reveal(row, col);
+    TestBed.tick();
+  }
+
+  const lastProgress = () => sentOfType('progress').at(-1);
 
   function sentOfType<T extends MatchMessage['type']>(type: T) {
     return connection.sent.filter((m): m is Extract<MatchMessage, { type: T }> => m.type === type);
@@ -64,6 +109,138 @@ describe('MatchService', () => {
     expect(start.mines.length).toBe(40);
     expect(start.rules.mineRule).toBe('penalty');
     expect(match.phase()).toBe('countdown');
+  });
+
+  it('the host plays exactly the board it sent, from the same opening', () => {
+    setUp('host');
+    match.startRound();
+    const { mines, start } = sentOfType('start')[0];
+    vi.advanceTimersByTime(3000);
+
+    const myMines = game
+      .board()
+      .flat()
+      .filter((c) => c.hasMine)
+      .map((c) => c.row * 9 + c.col);
+    expect(myMines).toEqual([...mines].sort((a, b) => a - b));
+    expect(game.board()[start.row][start.col].isRevealed).toBe(true);
+    expect(game.board()[start.row][start.col].hasMine).toBe(false);
+  });
+
+  it('with no guessing on, every board can be solved by logic alone', () => {
+    setUp('host');
+    match.setRules({ preset: 'expert', noGuess: true });
+    // Several rounds, because some random Expert boards happen to be solvable anyway.
+    for (let round = 1; round <= 8; round++) {
+      match.startRound();
+      const { mines, start } = sentOfType('start')[round - 1];
+      expect(isSolvableWithoutGuessing(gridWithMines(16, 30, mines), start.row, start.col)).toBe(
+        true,
+      );
+      vi.advanceTimersByTime(3000);
+      connection.deliver({ type: 'finished', round, finish: { kind: 'cleared', totalMs: 1 } });
+    }
+  });
+
+  it('the guest takes over the rules the host chooses in the lobby', () => {
+    setUp('guest');
+    connection.deliver({ type: 'rules', rules: { ...RULES, preset: 'expert' } });
+    expect(match.rules().preset).toBe('expert');
+  });
+
+  it('the host does not take orders from the guest', () => {
+    setUp('host');
+    connection.deliver({ type: 'rules', rules: { ...RULES, preset: 'expert' } });
+    expect(match.rules().preset).toBe('beginner');
+
+    connection.deliver({
+      type: 'start',
+      round: 1,
+      rules: RULES,
+      mines: POCKET_MINES,
+      start: { row: 4, col: 4 },
+    });
+    expect(match.phase()).toBe('lobby');
+  });
+
+  it('a guest ignores a rematch message, only the host can start a round', () => {
+    setUp('guest');
+    connection.deliver({ type: 'rematch' });
+    expect(match.phase()).toBe('lobby');
+    expect(sentOfType('start')).toEqual([]);
+    expect(sentOfType('rematch')).toEqual([]);
+  });
+
+  it('shows the opponent’s progress for this round, not for an older one', () => {
+    setUp('guest');
+    startPocketRound({}, 2);
+
+    connection.deliver({ type: 'progress', round: 1, revealed: 50, minesHit: 3 });
+    expect(match.opponent()).toEqual({ revealed: 0, minesHit: 0 });
+
+    connection.deliver({ type: 'progress', round: 2, revealed: 40, minesHit: 1 });
+    expect(match.opponent()).toEqual({ revealed: 40, minesHit: 1 });
+  });
+
+  it('ignores a finish message from an older round', () => {
+    setUp('guest');
+    startPocketRound({}, 2);
+    connection.deliver({ type: 'finished', round: 1, finish: { kind: 'cleared', totalMs: 1000 } });
+    expect(match.opponentFinish()).toBeNull();
+    expect(match.phase()).toBe('playing');
+  });
+
+  it('reports my win to the opponent, with the last progress first and my time', () => {
+    setUp('guest');
+    startPocketRound();
+    vi.advanceTimersByTime(4000);
+    for (const { row, col } of POCKET_CELLS) play(row, col);
+
+    expect(lastProgress()?.revealed).toBe(71);
+    expect(connection.sent.at(-1)).toEqual({
+      type: 'finished',
+      round: 1,
+      finish: { kind: 'cleared', totalMs: 4000 },
+    });
+    expect(match.outcome()).toBe('won');
+    expect(match.phase()).toBe('finished');
+  });
+
+  it('reports my explosion to the opponent, and I have lost', () => {
+    setUp('guest');
+    startPocketRound();
+    play(0, 0);
+
+    expect(sentOfType('finished')[0].finish.kind).toBe('exploded');
+    expect(match.outcome()).toBe('lost');
+  });
+
+  it('a rematch request after a round starts a fresh round for the host', () => {
+    setUp('host');
+    match.startRound();
+    vi.advanceTimersByTime(3000);
+    connection.deliver({ type: 'progress', round: 1, revealed: 30, minesHit: 2 });
+    connection.deliver({ type: 'finished', round: 1, finish: { kind: 'cleared', totalMs: 1000 } });
+    expect(match.phase()).toBe('finished');
+
+    connection.deliver({ type: 'rematch' });
+    expect(sentOfType('start').map((m) => m.round)).toEqual([1, 2]);
+    expect(match.phase()).toBe('countdown');
+    expect(match.myFinish()).toBeNull();
+    expect(match.opponentFinish()).toBeNull();
+    expect(match.opponent()).toEqual({ revealed: 0, minesHit: 0 });
+    expect(match.outcome()).toBe('pending');
+  });
+
+  it('the guest stops waiting for the rematch when the new round starts', () => {
+    setUp('guest');
+    startPocketRound();
+    connection.deliver({ type: 'finished', round: 1, finish: { kind: 'cleared', totalMs: 1000 } });
+    match.startRound();
+    expect(match.rematchRequested()).toBe(true);
+
+    startPocketRound({}, 2);
+    expect(match.rematchRequested()).toBe(false);
   });
 
   it('guest builds the same board from the host message after the countdown', () => {
@@ -115,33 +292,37 @@ describe('MatchService', () => {
     connection.deliver({ type: 'finished', round: 1, finish: { kind: 'cleared', totalMs: 5_000 } });
     expect(match.outcome()).toBe('pending');
 
-    vi.advanceTimersByTime(6000);
+    vi.advanceTimersByTime(4500);
+    expect(match.outcome()).toBe('pending'); // I can still beat 5 seconds.
+
+    vi.advanceTimersByTime(1000);
     expect(match.outcome()).toBe('lost');
+    expect(sentOfType('finished')[0].finish.kind).toBe('stopped');
   });
 
-  it('sends progress at most twice a second, and the last update always arrives', () => {
+  it('sends progress at most twice a second, and the newest state always arrives', () => {
     setUp('guest');
-    connection.deliver({
-      type: 'start',
-      round: 1,
-      rules: { preset: 'beginner', noGuess: false, mineRule: 'defeat', penaltySeconds: 10 },
-      mines: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-      start: { row: 8, col: 8 },
-    });
-    vi.advanceTimersByTime(3000);
-    TestBed.tick();
+    startPocketRound();
     const before = sentOfType('progress').length;
+    expect(lastProgress()?.revealed).toBe(63);
 
-    // Five quick moves within a quarter of a second.
-    for (let col = 0; col < 5; col++) {
-      game.toggleFlag(0, col);
-      TestBed.tick();
+    // Three quick moves within a quarter of a second.
+    for (const { row, col } of POCKET_CELLS.slice(0, 3)) {
+      play(row, col);
       vi.advanceTimersByTime(50);
     }
     expect(sentOfType('progress').length).toBe(before);
 
     vi.advanceTimersByTime(500);
     expect(sentOfType('progress').length).toBe(before + 1);
+    expect(lastProgress()?.revealed).toBe(66);
+  });
+
+  it('the last progress does not wait: the round is over right away', () => {
+    setUp('guest');
+    startPocketRound();
+    for (const { row, col } of POCKET_CELLS) play(row, col); // No time passes.
+    expect(lastProgress()?.revealed).toBe(71);
   });
 
   describe('while a round is running', () => {
@@ -206,6 +387,34 @@ describe('MatchService', () => {
     expect(match.notice()).toContain('opponent left');
   });
 
+  it('ends the match when the connection fails', () => {
+    setUp('host');
+    match.startRound();
+    vi.advanceTimersByTime(3000);
+    connection.state.set('failed');
+    TestBed.tick();
+    expect(game.mode()).toBe('solo');
+    expect(match.notice()).toContain('connection was lost');
+  });
+
+  it('leaving closes the connection and ends the round', () => {
+    setUp('host');
+    match.startRound();
+    match.leave();
+    expect(connection.state()).toBe('idle');
+    expect(game.mode()).toBe('solo');
+    expect(match.phase()).toBe('lobby');
+  });
+
+  it('a stopped countdown does not start a round later', () => {
+    setUp('host');
+    match.startRound();
+    match.leave();
+    vi.advanceTimersByTime(5000);
+    expect(game.status()).toBe('ready');
+    expect(match.phase()).toBe('lobby');
+  });
+
   describe('against the bot', () => {
     it('plays a whole round: the bot clears the board while the person waits', async () => {
       setUp('host');
@@ -227,6 +436,26 @@ describe('MatchService', () => {
       expect(match.phase()).toBe('finished');
       // Nothing went over the network once the bot was chosen.
       expect(connection.sent.length).toBe(sentBefore);
+    });
+
+    it('forgets an old connection error, so it does not come back after the bot match', () => {
+      setUp('host');
+      connection.state.set('failed');
+      TestBed.tick();
+      match.playBot();
+      expect(connection.state()).toBe('idle');
+    });
+
+    it('the strength can change between rounds, but not during one', () => {
+      setUp('host');
+      match.playBot();
+      TestBed.tick();
+      match.setBotLevel('easy');
+      expect(match.botLevel()).toBe('easy');
+
+      match.startRound();
+      match.setBotLevel('hard');
+      expect(match.botLevel()).toBe('easy');
     });
 
     it('leaving the bot returns to normal play and to network matches', () => {

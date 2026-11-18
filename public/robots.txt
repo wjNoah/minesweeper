@@ -1,0 +1,5 @@
+# Search engines may visit every page.
+User-agent: *
+Allow: /
+
+Sitemap: https://minesweeperduel.com/sitemap.xml

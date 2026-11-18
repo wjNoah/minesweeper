@@ -27,6 +27,10 @@ describe('decideOutcome with the defeat rule', () => {
     expect(decideOutcome(stopped, cleared(40_000), 'defeat')).toBe('lost');
   });
 
+  it('is a draw when both hit a mine at almost the same moment', () => {
+    expect(decideOutcome(exploded, exploded, 'defeat')).toBe('draw');
+  });
+
   it('compares times when both cleared at almost the same moment', () => {
     expect(decideOutcome(cleared(40_000), cleared(41_000), 'defeat')).toBe('won');
     expect(decideOutcome(cleared(40_000), cleared(40_000), 'defeat')).toBe('draw');
@@ -40,6 +44,8 @@ describe('decideOutcome with the penalty rule', () => {
 
   it('lets the lowest total time win', () => {
     expect(decideOutcome(cleared(70_000), cleared(55_000), 'penalty')).toBe('lost');
+    expect(decideOutcome(cleared(55_000), cleared(70_000), 'penalty')).toBe('won');
+    expect(decideOutcome(cleared(55_000), cleared(55_000), 'penalty')).toBe('draw');
   });
 
   it('decides when the slower player passes the finished time', () => {
@@ -113,6 +119,19 @@ describe('isMatchMessage with an untrusted opponent', () => {
 
   it('rejects an opening on a mine', () => {
     expect(isMatchMessage(start({ start: { row: 0, col: 3 } }))).toBe(false);
+  });
+
+  it('rejects a finish that is not one of the known kinds', () => {
+    const finish = { kind: 'teleported', totalMs: 1000 };
+    expect(isMatchMessage({ type: 'finished', round: 1, finish })).toBe(false);
+    expect(isMatchMessage({ type: 'finished', round: 1, finish: null })).toBe(false);
+  });
+
+  it('rejects rules with a wrong type or an unknown board', () => {
+    expect(isMatchMessage({ type: 'rules', rules: { ...rules, noGuess: 'yes' } })).toBe(false);
+    expect(isMatchMessage({ type: 'rules', rules: { ...rules, preset: 'custom' } })).toBe(false);
+    expect(isMatchMessage({ type: 'rules', rules: { ...rules, mineRule: 'none' } })).toBe(false);
+    expect(isMatchMessage({ type: 'rules', rules })).toBe(true);
   });
 
   it('rejects negative, fractional or absurd numbers in progress and finish messages', () => {

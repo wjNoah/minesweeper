@@ -1,8 +1,30 @@
 import { TestBed } from '@angular/core/testing';
-import { countMines, createEmptyBoard, getNeighbors, placeMines } from './board-logic';
+import {
+  computeAdjacentCounts,
+  countMines,
+  createEmptyBoard,
+  getNeighbors,
+  Grid,
+  placeMines,
+} from './board-logic';
 import { isSolvableWithoutGuessing } from './solver';
 import { GameService } from './game.service';
 import { SettingsService } from './settings.service';
+
+/** Repeatable boards: a test must not pass or fail by chance. */
+function seededRandom(seed: number): () => number {
+  let state = seed;
+  return () => (state = (state * 16807) % 2147483647) / 2147483647;
+}
+
+/** '*' is a mine, '.' is empty. */
+function gridFromLayout(layout: string[]): Grid {
+  const grid = createEmptyBoard(layout.length, layout[0].length);
+  layout.forEach((line, row) =>
+    [...line].forEach((char, col) => (grid[row][col].hasMine = char === '*')),
+  );
+  return computeAdjacentCounts(grid);
+}
 
 describe('GameService', () => {
   let game: GameService;
@@ -27,6 +49,7 @@ describe('GameService', () => {
     localStorage.clear();
     vi.useFakeTimers();
     game = TestBed.inject(GameService);
+    game.random = seededRandom(7);
     game.setDifficulty('beginner');
   });
 
@@ -99,7 +122,7 @@ describe('GameService', () => {
   describe('1v1 rounds', () => {
     function startRound(rule: 'defeat' | 'penalty'): void {
       game.prepareMatch('beginner', rule, 10);
-      const minefield = placeMines(createEmptyBoard(9, 9), 10, 4, 4, Math.random);
+      const minefield = placeMines(createEmptyBoard(9, 9), 10, 4, 4, seededRandom(5));
       game.startMatchRound(minefield, { row: 4, col: 4 });
     }
 
@@ -159,6 +182,78 @@ describe('GameService', () => {
       expect(game.penaltyFlash()?.id).not.toBe(firstId);
     });
 
+    it('adds the penalty for every mine when one chord hits several', () => {
+      game.prepareMatch('beginner', 'penalty', 10);
+      game.startMatchRound(gridFromLayout(['*.*......', ...Array(8).fill('.........')]), {
+        row: 0,
+        col: 1,
+      });
+      game.toggleFlag(1, 0); // Two wrong flags, so the chord opens both mines.
+      game.toggleFlag(1, 1);
+      game.chord(0, 1);
+
+      expect(game.minesHit()).toBe(2);
+      expect(game.penaltyFlash()?.seconds).toBe(20);
+      expect(game.displaySeconds()).toBe(20);
+      expect(game.status()).toBe('playing');
+    });
+
+    it('a hit mine stays flagged, so it costs a penalty only once', () => {
+      startRound('penalty');
+      const mine = find((hasMine) => hasMine);
+      game.reveal(mine.row, mine.col);
+      game.toggleFlag(mine.row, mine.col);
+      game.reveal(mine.row, mine.col);
+      expect(game.minesHit()).toBe(1);
+      expect(game.board()[mine.row][mine.col].isFlagged).toBe(true);
+    });
+
+    it('a new game starts without penalties or a leftover message', () => {
+      startRound('penalty');
+      const mine = find((hasMine) => hasMine);
+      game.reveal(mine.row, mine.col);
+
+      game.newGame();
+      expect(game.minesHit()).toBe(0);
+      expect(game.penaltyFlash()).toBeNull();
+      expect(game.displaySeconds()).toBe(0);
+    });
+
+    it('after leaving a match, a mine ends the game again and adds no seconds', () => {
+      startRound('penalty');
+      game.leaveMatch();
+      expect(game.mode()).toBe('solo');
+      expect(game.penaltySeconds()).toBe(0);
+
+      game.reveal(4, 4);
+      const mine = find((hasMine) => hasMine);
+      game.reveal(mine.row, mine.col);
+      expect(game.status()).toBe('lost');
+    });
+
+    it('flags are blocked during the countdown too', () => {
+      game.prepareMatch('beginner', 'defeat', 10);
+      game.toggleFlag(0, 0);
+      expect(game.board()[0][0].isFlagged).toBe(false);
+    });
+
+    it('stopping a round freezes the time', () => {
+      startRound('penalty');
+      vi.advanceTimersByTime(2000);
+      game.stopMatchRound();
+      expect(game.status()).toBe('stopped');
+
+      vi.advanceTimersByTime(5000);
+      expect(game.elapsedSeconds()).toBe(2);
+      expect(game.totalMs()).toBe(2000);
+    });
+
+    it('never reports a negative time, even if the computer’s clock is set back', () => {
+      startRound('defeat');
+      vi.setSystemTime(Date.now() - 60_000);
+      expect(game.totalMs()).toBe(0);
+    });
+
     it('with the defeat rule, a mine ends the game', () => {
       startRound('defeat');
       const mine = find((hasMine) => hasMine);
@@ -198,9 +293,22 @@ describe('GameService', () => {
       expect(game.hint()).toBeNull();
     });
 
-    it('does not count a game won with hints for best times', () => {
+    it('any move clears the hint, not only a flag', () => {
+      TestBed.inject(SettingsService).update({ noGuess: true });
       game.reveal(4, 4);
       game.showHint();
+      const safe = find((hasMine, isRevealed) => !hasMine && !isRevealed);
+      expect(game.hint()).not.toBeNull();
+
+      game.reveal(safe.row, safe.col);
+      expect(game.hint()).toBeNull();
+    });
+
+    it('does not count a game won with hints for best times', () => {
+      TestBed.inject(SettingsService).update({ noGuess: true }); // Always has a hint to show.
+      game.reveal(4, 4);
+      game.showHint();
+      expect(game.hintsUsed()).toBe(1);
       revealAllSafeCells();
       expect(game.status()).toBe('won');
       expect(localStorage.getItem('minesweeper.bestTimes')).toBeNull();
@@ -229,6 +337,37 @@ describe('GameService', () => {
   });
 
   describe('settings', () => {
+    it('with safeArea on, the first click always opens an area', () => {
+      for (let seed = 1; seed <= 20; seed++) {
+        game.random = seededRandom(seed);
+        game.newGame();
+        game.reveal(4, 4);
+        expect(getNeighbors(game.board(), 4, 4).some((n) => n.hasMine)).toBe(false);
+      }
+    });
+
+    it('with safeArea off, only the clicked cell is guaranteed to be safe', () => {
+      TestBed.inject(SettingsService).update({ safeArea: false });
+      let foundMineNextToClick = false;
+      for (let seed = 1; seed <= 40; seed++) {
+        game.random = seededRandom(seed);
+        game.newGame();
+        game.reveal(4, 4);
+        expect(game.board()[4][4].hasMine).toBe(false);
+        foundMineNextToClick ||= getNeighbors(game.board(), 4, 4).some((n) => n.hasMine);
+      }
+      expect(foundMineNextToClick).toBe(true);
+    });
+
+    it('a click on a number chords when chordOnClick is on, which is the default', () => {
+      game.board.set(gridFromLayout(['*..', '...', '...']));
+      game.status.set('playing');
+      game.reveal(0, 1);
+      game.toggleFlag(0, 0);
+      game.primaryAction(0, 1);
+      expect(game.board()[1][1].isRevealed).toBe(true);
+    });
+
     it('does not chord on a single click when chordOnClick is off', () => {
       TestBed.inject(SettingsService).update({ chordOnClick: false });
       // Fixed pseudo-random sequence, so the board always has a number to chord.
@@ -288,6 +427,9 @@ describe('GameService', () => {
       const safe = find((hasMine, isRevealed) => !hasMine && !isRevealed);
       game.reveal(safe.row, safe.col);
       expect(game.board()[safe.row][safe.col].isRevealed).toBe(false);
+
+      game.toggleFlag(safe.row, safe.col);
+      expect(game.board()[safe.row][safe.col].isFlagged).toBe(false);
     });
 
     it('wins when all safe cells are revealed and flags every mine', () => {
@@ -312,6 +454,20 @@ describe('GameService', () => {
   });
 
   describe('difficulty', () => {
+    it('uses the beginner and intermediate sizes', () => {
+      game.setDifficulty('beginner');
+      expect(game.config()).toEqual({ rows: 9, cols: 9, mines: 10 });
+      game.setDifficulty('intermediate');
+      expect(game.config()).toEqual({ rows: 16, cols: 16, mines: 40 });
+      game.reveal(0, 0);
+      expect(countMines(game.board())).toBe(40);
+    });
+
+    it('turns an empty custom field into the smallest allowed value', () => {
+      game.setDifficulty('custom', { rows: Number.NaN, cols: Number.NaN, mines: Number.NaN });
+      expect(game.config()).toEqual({ rows: 5, cols: 5, mines: 1 });
+    });
+
     it('uses the expert size of 30 columns, 16 rows and 99 mines', () => {
       game.setDifficulty('expert');
       expect(game.board().length).toBe(16);

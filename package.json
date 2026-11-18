@@ -7,7 +7,8 @@
     "start:lan": "ng serve --host 0.0.0.0",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "test:relay": "node --test --test-timeout=30000 --test-force-exit relay/test/relay.test.mjs"
   },
   "private": true,
   "packageManager": "npm@10.9.9",

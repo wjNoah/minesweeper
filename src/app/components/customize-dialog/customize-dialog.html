@@ -10,7 +10,7 @@
     <div class="body">
       <section aria-labelledby="themes-title">
         <h3 id="themes-title">Theme</h3>
-        <p class="hint theme-hint">Colors for the board and the page.</p>
+        <p class="hint theme-hint">Colors for the board and the page</p>
         <div class="themes" role="group" aria-labelledby="themes-title">
           @for (theme of themes; track theme.id) {
             <button
@@ -78,7 +78,7 @@
           (chosen)="onFileChosen($event, 'page')"
           (removed)="appearance.removePageImage()"
         />
-        <p class="hint">The game sits on a see-through panel, so text stays readable.</p>
+        <p class="hint">The game sits on a see-through panel, so text stays readable</p>
       </section>
 
       <section aria-labelledby="tile-picture-title">
@@ -150,11 +150,11 @@
           (chosen)="onFileChosen($event, 'mine')"
           (removed)="appearance.removeMineImage()"
         />
-        <p class="hint">A picture with a transparent background works best.</p>
+        <p class="hint">A picture with a transparent background works best</p>
       </section>
 
       <p class="error" aria-live="polite">{{ error() }}</p>
-      <p class="hint privacy">Pictures are saved only in this browser and never uploaded.</p>
+      <p class="hint privacy">Pictures are saved only in this browser and never uploaded</p>
     </div>
 
     <footer class="foot">

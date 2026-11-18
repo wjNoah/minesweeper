@@ -67,10 +67,19 @@ describe('generateNoGuessBoard', () => {
     expect(countMines(result.grid)).toBe(99);
   });
 
-  it('gives up on boards that are too dense and says so', () => {
-    const result = generateNoGuessBoard(createEmptyBoard(5, 5), 20, 2, 2, seededRandom(3), 5);
-    expect(countMines(result.grid)).toBe(20);
-    expect(result.noGuess).toBe(isSolvableWithoutGuessing(result.grid, 2, 2));
+  it('gives up and says so when no board can be solved, but still deals a playable one', () => {
+    // Clicking the top of this tiny board always ends in a 50/50 at the bottom.
+    const result = generateNoGuessBoard(createEmptyBoard(3, 2), 1, 0, 0, seededRandom(3));
+    expect(result.noGuess).toBe(false);
+    expect(countMines(result.grid)).toBe(1);
+    expect(result.grid[0][0].hasMine).toBe(false);
+  });
+
+  it('stops after the time budget instead of freezing the page', () => {
+    const start = performance.now();
+    const result = generateNoGuessBoard(createEmptyBoard(3, 2), 1, 0, 0, seededRandom(3), 1e9, 20);
+    expect(result.noGuess).toBe(false);
+    expect(performance.now() - start).toBeLessThan(1000);
   });
 });
 
@@ -91,6 +100,15 @@ describe('findHint', () => {
     let grid = revealCell(opened(), 2, 1);
     grid = toggleFlag(grid, 2, 0);
     expect(findHint(grid)).toEqual({ kind: 'mine', row: 2, col: 2 });
+  });
+
+  it('uses the mine count to find mines that no number touches', () => {
+    // Row 2 is proven by the numbers. Then row 3 must be mines too: 3 mines left, 3 cells left.
+    let grid = revealCell(gridFromLayout(['...', '...', '***', '***']), 0, 0);
+    grid = toggleFlag(grid, 2, 0);
+    grid = toggleFlag(grid, 2, 1);
+    grid = toggleFlag(grid, 2, 2);
+    expect(findHint(grid)).toEqual({ kind: 'mine', row: 3, col: 0 });
   });
 
   it('returns null when only a guess is left', () => {

@@ -29,7 +29,7 @@
                 : 'Waiting for your friend to join…'
             }}
           </p>
-          <p class="hint">They click 1v1, then Join a room, and type the code.</p>
+          <p class="hint">They click 1v1, then Join a room, and type the code</p>
         }
 
         @case ('connecting') {
@@ -67,7 +67,7 @@
             @if (match.isRacing()) {
               <p class="hint">A round is running. The rules can be changed after it.</p>
             } @else if (!match.isHost()) {
-              <p class="hint">The host chooses the rules.</p>
+              <p class="hint">The host chooses the rules</p>
             }
             <div class="row choice">
               <span class="label" id="level-label">Difficulty</span>
@@ -87,7 +87,7 @@
             <label class="row">
               <span>
                 <span class="label">No guessing</span>
-                <span class="hint">Both get a board that logic alone can solve.</span>
+                <span class="hint">Both get a board that logic alone can solve</span>
               </span>
               <input
                 type="checkbox"
@@ -166,11 +166,11 @@
               }
               <button type="button" class="choice-button bot-choice" (click)="playBot()">
                 <strong>Play against a bot</strong>
-                <span>Race the computer on this device. Works anywhere, even offline.</span>
+                <span>Race the computer on this device</span>
               </button>
             </div>
             @if (!connection.isAvailable) {
-              <p class="hint">Playing against a friend is not set up on this site yet.</p>
+              <p class="hint">Playing against a friend is not set up on this site yet</p>
             }
           } @else {
             <label class="label" for="room-code-input">Room code</label>

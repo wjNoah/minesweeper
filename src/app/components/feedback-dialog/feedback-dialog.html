@@ -11,7 +11,7 @@
       @if (feedback.status() === 'sent') {
         <div class="thanks" role="status">
           <p class="thanks-title">Thanks for your feedback</p>
-          <p class="hint">It arrived and will be read.</p>
+          <p class="hint">It arrived and will be read</p>
         </div>
       } @else {
         <form id="feedback-form" novalidate (submit)="submit($event, botField.value)">
@@ -43,7 +43,7 @@
 
           <label class="field">
             <span class="label">Email (optional)</span>
-            <span class="hint">Only used to reply to you.</span>
+            <span class="hint">Only used to reply to you</span>
             <input
               #emailInput
               type="email"

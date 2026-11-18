@@ -87,6 +87,44 @@ describe('BotOpponent', () => {
     expect(finished.type === 'finished' && finished.finish.totalMs).toBeGreaterThan(2000);
   });
 
+  it('with the penalty rule, its mines count towards its time', async () => {
+    const clumsy = new BotOpponent(
+      () => ({ ...BOT_LEVELS.hard, mistakeChance: 1 }), // Every move is a random click.
+      seededRandom(5),
+    );
+    clumsy.onMessage((m) => received.push(m));
+    clumsy.send(startMessage(rules({ mineRule: 'penalty', penaltySeconds: 30 })));
+    await vi.advanceTimersByTimeAsync(180_000);
+
+    const progress = received.filter((m) => m.type === 'progress').at(-1);
+    const minesHit = progress?.type === 'progress' ? progress.minesHit : 0;
+    expect(minesHit).toBeGreaterThan(0);
+
+    const [finished] = finishes();
+    expect(finished.type === 'finished' && finished.finish.kind).toBe('cleared');
+    expect(finished.type === 'finished' && finished.finish.totalMs).toBeGreaterThan(
+      minesHit * 30_000,
+    );
+  });
+
+  it('a new round cancels the moves still planned for the old one', async () => {
+    bot.send(startMessage(rules()));
+    await vi.advanceTimersByTimeAsync(3500);
+    bot.send({ ...startMessage(rules()), round: 2 } as MatchMessage);
+    received.length = 0;
+
+    await vi.advanceTimersByTimeAsync(2900); // Still the new countdown.
+    expect(received).toEqual([]);
+  });
+
+  it('stops when the person leaves', async () => {
+    bot.send(startMessage(rules()));
+    bot.send({ type: 'leave' });
+    expect(bot.state()).toBe('idle');
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(received).toEqual([]);
+  });
+
   it('ignores messages about an older round and stops when closed', async () => {
     bot.send(startMessage(rules()));
     await vi.advanceTimersByTimeAsync(4000);
