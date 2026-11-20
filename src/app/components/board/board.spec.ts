@@ -145,6 +145,71 @@ describe('Board', () => {
     });
   });
 
+  describe('modes', () => {
+    beforeEach(() => {
+      // Mirror and Fog are unlocked by the Intermediate and Expert quests.
+      localStorage.setItem(
+        'minesweeper.quests',
+        JSON.stringify({
+          'intermediate-win': { progress: 1, completedAt: 1 },
+          'expert-win': { progress: 1, completedAt: 1 },
+        }),
+      );
+    });
+
+    function useMode(mode: 'mirror' | 'fog'): void {
+      // The quest progress above is read when the services start, so start them now.
+      TestBed.resetTestingModule();
+      fixture = TestBed.createComponent(Board);
+      game = TestBed.inject(GameService);
+      game.setDifficulty('beginner');
+      game.setGameMode(mode);
+      refresh();
+      host.remove();
+      host = fixture.nativeElement as HTMLElement;
+      document.body.appendChild(host);
+    }
+
+    it('Mirror: a click opens the mirrored cell, and the clicked one stays closed', () => {
+      useMode('mirror');
+      // Fixed mines next to both cells, so each is a number and opens alone.
+      game.board.set(
+        gridFromLayout([
+          '.........',
+          '.........',
+          '.........',
+          '........*',
+          '*........',
+          '.........',
+          '.........',
+          '.........',
+          '.........',
+        ]),
+      );
+      game.status.set('playing');
+      refresh();
+      cell(4, 1).click();
+      refresh();
+      expect(game.board()[4][7].isRevealed).toBe(true);
+      expect(game.board()[4][1].isRevealed).toBe(false);
+    });
+
+    it('Mirror: a right-click and the F key flag the mirrored cell too', () => {
+      useMode('mirror');
+      cell(0, 0).dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+      expect(game.board()[0][8].isFlagged).toBe(true);
+
+      focusCell(2, 2);
+      press('f');
+      expect(game.board()[2][6].isFlagged).toBe(true);
+    });
+
+    it('tells the cells which mode is played, so Fog can fade the numbers', () => {
+      useMode('fog');
+      expect(host.querySelector('.board')?.getAttribute('data-game-mode')).toBe('fog');
+    });
+  });
+
   describe('keyboard play', () => {
     it('moves the focus with the arrow keys', () => {
       focusCell(4, 4);

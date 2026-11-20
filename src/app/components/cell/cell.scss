@@ -10,12 +10,16 @@
   height: var(--cell-size);
   padding: 0;
   border: 0;
-  border-radius: 5px;
+  // A theme may set its own corners (OG has square ones).
+  border-radius: var(--tile-radius, 5px);
   background-color: var(--tile);
-  // Raised edge: hidden and revealed cells differ by shape, not only by color.
-  box-shadow: inset 0 -3px 0 var(--tile-edge);
+  // Raised edge: hidden and revealed cells differ by shape, not only by color. A theme with
+  // --tile-light also gets a light upper-left edge, for an old-fashioned raised button.
+  box-shadow:
+    inset 0 -3px 0 var(--tile-edge),
+    inset 2px 2px 0 var(--tile-light, transparent);
   color: var(--ink);
-  font: 700 calc(var(--cell-size) * 0.5) / 1 var(--font);
+  font: 700 calc(var(--cell-size) * 0.5) / 1 var(--board-font, var(--font));
   font-variant-numeric: tabular-nums;
   -webkit-touch-callout: none;
   transition: background-color 120ms ease;
@@ -159,6 +163,65 @@
 .exploded .mine .shine,
 .hit .mine .shine {
   fill: var(--danger);
+}
+
+// Fog mode: a number fades a moment after it opens. Pointing at the cell, focusing it or
+// pressing it brings the number back, and it fades again after leaving. Only while playing,
+// so the finished board shows everything.
+:host-context([data-game-mode='fog'][data-status='playing']) .number span {
+  animation: fog-fade 600ms ease 2.5s forwards;
+}
+
+:host-context([data-game-mode='fog'][data-status='playing'])
+  .number:is(:hover, :focus-visible, :active)
+  span {
+  animation: none;
+}
+
+@keyframes fog-fade {
+  to {
+    opacity: 0;
+  }
+}
+
+// Phones and tablets have no pointer to hover with, so there a number fades to a faint shadow
+// instead of vanishing. Pressing a cell still shows it fully.
+@media (hover: none) {
+  :host-context([data-game-mode='fog'][data-status='playing']) .number span {
+    animation-name: fog-fade-touch;
+  }
+}
+
+@keyframes fog-fade-touch {
+  to {
+    opacity: 0.18;
+  }
+}
+
+// Bouncy flags: flags wiggle while the game runs, and a flag that lands on a cell pops in.
+// (A joke mode, so it moves on purpose. Reduced motion switches it off like everything else.)
+:host-context([data-game-mode='bouncy'][data-status='playing']) .flagged :is(.flag, .flag-picture) {
+  transform-origin: 30% 90%;
+  animation:
+    flag-wiggle 1.4s ease-in-out infinite,
+    flag-pop 250ms ease-out;
+}
+
+@keyframes flag-wiggle {
+  0%,
+  100% {
+    transform: rotate(-6deg);
+  }
+
+  50% {
+    transform: rotate(6deg);
+  }
+}
+
+@keyframes flag-pop {
+  from {
+    transform: scale(0.4);
+  }
 }
 
 .pressing {

@@ -10,14 +10,20 @@
     <div class="body">
       <section aria-labelledby="themes-title">
         <h3 id="themes-title">Theme</h3>
-        <p class="hint theme-hint">Colors for the board and the page</p>
+        <p class="hint theme-hint">Colors for the board and the page. Quests unlock more.</p>
         <div class="themes" role="group" aria-labelledby="themes-title">
           @for (theme of themes; track theme.id) {
+            @let quest = lockedBy(theme.id);
             <button
               type="button"
               class="theme"
+              [class.locked]="quest"
               [attr.data-board-theme]="theme.id"
-              [attr.aria-pressed]="appearance.choices().boardTheme === theme.id"
+              [attr.aria-pressed]="appearance.activeTheme() === theme.id"
+              [attr.aria-disabled]="quest ? true : null"
+              [attr.aria-label]="
+                quest ? theme.label + ', locked. Quest: ' + quest.description : null
+              "
               (click)="appearance.setBoardTheme(theme.id)"
             >
               <!-- A tiny board in the theme's own colors (set by data-board-theme). -->
@@ -32,6 +38,15 @@
                 <span class="tile"></span>
               </span>
               <span class="name">{{ theme.label }}</span>
+              @if (quest) {
+                <span class="lock">
+                  <svg viewBox="0 0 16 16" aria-hidden="true">
+                    <rect x="3.5" y="7" width="9" height="6.5" rx="1.5" />
+                    <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" />
+                  </svg>
+                  {{ quest.title }}
+                </span>
+              }
             </button>
           }
         </div>

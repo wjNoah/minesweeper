@@ -14,6 +14,7 @@ import { createEmptyBoard, Grid, gridWithMines, placeMines, RandomFn } from './b
 import { BotOpponent } from './bot-opponent';
 import { ConnectionService } from './connection.service';
 import { GameService } from './game.service';
+import { QuestService } from './quest.service';
 import { MatchTransport } from './match-transport';
 import { generateNoGuessBoard } from './solver';
 
@@ -37,6 +38,7 @@ export interface OpponentProgress {
 export class MatchService {
   private readonly network = inject(ConnectionService);
   private readonly game = inject(GameService);
+  private readonly quests = inject(QuestService);
   /** The opponent: another person over the network, or the bot on this device. */
   private readonly transport = signal<MatchTransport>(this.network);
 
@@ -69,6 +71,8 @@ export class MatchService {
   random: RandomFn = Math.random;
 
   private round = 0;
+  /** A round counts for quests once, even if more messages about it arrive. */
+  private reportedRound = 0;
   private countdownTimer: ReturnType<typeof setInterval> | undefined;
   private raceTimer: ReturnType<typeof setInterval> | undefined;
   private progressTimer: ReturnType<typeof setTimeout> | undefined;
@@ -267,10 +271,29 @@ export class MatchService {
     if (!this.myFinish()) this.finishMine('stopped');
     clearInterval(this.raceTimer);
     this.phase.set('finished');
+    this.reportToQuests();
+  }
+
+  /**
+   * Waits for both results: with the defeat rule, an early "won" can still turn into "lost"
+   * when the opponent's faster time arrives a moment later.
+   */
+  private reportToQuests(): void {
+    if (!this.myFinish() || !this.opponentFinish() || this.reportedRound === this.round) return;
+    this.reportedRound = this.round;
+    if (this.outcome() !== 'won') return;
+    const bot = this.isBot();
+    this.quests.record({
+      type: 'match-won',
+      opponent: bot ? 'bot' : 'friend',
+      botLevel: bot ? this.botLevel() : null,
+    });
   }
 
   private endMatch(): void {
     this.stopTimers();
+    // The next match may start counting rounds at 1 again (a new host).
+    this.reportedRound = 0;
     this.phase.set('lobby');
     this.myFinish.set(null);
     this.opponentFinish.set(null);

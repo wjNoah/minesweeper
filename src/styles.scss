@@ -4,25 +4,11 @@
 @use 'board-themes';
 
 // Design tokens: warm paper and graphite ink, one blue for focus, red only for danger.
-// Every number color has at least 4.5:1 contrast on --tile-open, in every board theme.
+// The text and number colors live in _board-themes.scss ($text-light, $text-dark), because the
+// theme previews need them too. Every number color has at least 4.5:1 contrast on --tile-open.
 @mixin dark-theme {
   color-scheme: dark;
-  --ink: #ecebe6;
-  --ink-muted: #a3a097;
-  --focus: #7aa2ff;
-  --danger: #e0574b;
-  --success: #6cc68b;
-
-  --flag: #ef6a5e;
-
-  --n1: #86aaff;
-  --n2: #74c98f;
-  --n3: #f2867b;
-  --n4: #c1a9ff;
-  --n5: #f0a868;
-  --n6: #5fd2c8;
-  --n7: #ecebe6;
-  --n8: #a3a097;
+  @include board-themes.board-vars(board-themes.$text-dark);
 }
 
 :root {
@@ -33,22 +19,7 @@
   --radius: 10px;
   --font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 
-  --ink: #1d1c1a;
-  --ink-muted: #66645e;
-  --focus: #2f62d9;
-  --danger: #c8372d;
-  --success: #2c7a47;
-
-  --flag: #c8372d;
-
-  --n1: #2a56c9;
-  --n2: #2c7a47;
-  --n3: #c33a2f;
-  --n4: #5b3fb0;
-  --n5: #93450f;
-  --n6: #12716f;
-  --n7: #1d1c1a;
-  --n8: #66645e;
+  @include board-themes.board-vars(board-themes.$text-light);
 }
 
 // Dark theme: follows the system unless the user picked a theme in settings.
@@ -88,6 +59,22 @@
   inset: 0;
   background: var(--page-image) center / cover no-repeat;
   content: '';
+}
+
+// Some unlocked themes draw a background in CSS (--theme-art). Like the picture above, it sits
+// on a fixed layer, so it fills the window and stays put while the page scrolls.
+body::after {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  background: var(--theme-art, none);
+  content: '';
+  pointer-events: none;
+}
+
+// The player's own picture wins over the theme's art.
+:root[data-page-image] body::after {
+  display: none;
 }
 
 body {
@@ -219,3 +206,6 @@ kbd {
     animation-duration: 0ms !important;
   }
 }
+
+// Last, so the unlocked themes' own text and number colors win over the light and dark ones above.
+@include board-themes.special-themes;

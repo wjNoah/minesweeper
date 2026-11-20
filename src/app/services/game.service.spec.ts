@@ -9,6 +9,7 @@ import {
 } from './board-logic';
 import { isSolvableWithoutGuessing } from './solver';
 import { GameService } from './game.service';
+import { QuestService } from './quest.service';
 import { SettingsService } from './settings.service';
 
 /** Repeatable boards: a test must not pass or fail by chance. */
@@ -450,6 +451,219 @@ describe('GameService', () => {
           .flat()
           .some((c) => c.isRevealed),
       ).toBe(false);
+    });
+  });
+
+  describe('game modes', () => {
+    /** Unlocks every mode, as if the Intermediate and Expert quests were done. */
+    function unlockModes(): void {
+      const quests = TestBed.inject(QuestService);
+      const win = {
+        type: 'game-won',
+        seconds: 100,
+        noGuess: false,
+        hintsUsed: 1,
+        flagsPlaced: 1,
+        chords: 0,
+      } as const;
+      quests.record({ ...win, difficulty: 'intermediate' });
+      quests.record({ ...win, difficulty: 'expert' });
+    }
+
+    it('a locked mode cannot be chosen, not even for later', () => {
+      game.setGameMode('fog');
+      expect(game.gameMode()).toBe('normal');
+      // Otherwise the game would switch to Fog by itself once its quest is done.
+      expect(TestBed.inject(SettingsService).settings().gameMode).toBe('normal');
+    });
+
+    it('choosing an unlocked mode starts a new game in it and remembers it', () => {
+      unlockModes();
+      game.reveal(4, 4);
+      game.setGameMode('fog');
+      expect(game.gameMode()).toBe('fog');
+      expect(game.status()).toBe('ready');
+      expect(TestBed.inject(SettingsService).settings().gameMode).toBe('fog');
+    });
+
+    it('a saved mode that is still locked plays Normal', () => {
+      TestBed.inject(SettingsService).update({ gameMode: 'mirror' });
+      game.newGame();
+      expect(game.gameMode()).toBe('normal');
+    });
+
+    it('No flags: no flag can be placed, in any way', () => {
+      unlockModes();
+      game.setGameMode('no-flags');
+      game.toggleFlag(0, 0);
+      game.secondaryAction(1, 1);
+      game.setFlagMode(true);
+      game.primaryAction(2, 2);
+      expect(game.flagMode()).toBe(false);
+      expect(game.minesLeft()).toBe(10);
+      expect(
+        game
+          .board()
+          .flat()
+          .some((c) => c.isFlagged),
+      ).toBe(false);
+    });
+
+    it('No flags turns off a Flag click mode that was on', () => {
+      unlockModes();
+      game.setFlagMode(true);
+      game.setGameMode('no-flags');
+      expect(game.flagMode()).toBe(false);
+    });
+
+    it('best times count in Normal only', () => {
+      unlockModes();
+      game.setGameMode('fog');
+      expect(game.bestTimeKey()).toBeNull();
+      game.reveal(4, 4);
+      revealAllSafeCells();
+      expect(game.status()).toBe('won');
+      expect(localStorage.getItem('minesweeper.bestTimes')).toBeNull();
+
+      game.setGameMode('normal');
+      expect(game.bestTimeKey()).toBe('beginner');
+    });
+
+    it('Bouncy flags: a flag hops every 6 seconds while the game runs, and stops after it', () => {
+      TestBed.inject(QuestService).record({
+        type: 'game-won',
+        difficulty: 'beginner',
+        seconds: 100,
+        noGuess: false,
+        hintsUsed: 1,
+        flagsPlaced: 1,
+        chords: 0,
+      });
+      // "Regular" needs 25 finished games.
+      for (let i = 0; i < 24; i++) {
+        TestBed.inject(QuestService).record({
+          type: 'game-lost',
+          difficulty: 'beginner',
+          chords: 0,
+        });
+      }
+      game.setGameMode('bouncy');
+      expect(game.gameMode()).toBe('bouncy');
+
+      game.reveal(4, 4);
+      const hidden = game
+        .board()
+        .flat()
+        .find((c) => !c.isRevealed);
+      if (!hidden) throw new Error('Board has no hidden cell');
+      game.toggleFlag(hidden.row, hidden.col);
+      const flagAt = () =>
+        game
+          .board()
+          .flat()
+          .filter((c) => c.isFlagged)
+          .map((c) => `${c.row},${c.col}`);
+
+      vi.advanceTimersByTime(5900);
+      expect(flagAt()).toEqual([`${hidden.row},${hidden.col}`]);
+      vi.advanceTimersByTime(100);
+      expect(flagAt().length).toBe(1);
+      expect(flagAt()).not.toEqual([`${hidden.row},${hidden.col}`]);
+
+      game.newGame();
+      const empty = game.board();
+      vi.advanceTimersByTime(20_000);
+      expect(game.board()).toBe(empty);
+    });
+
+    it('a 1v1 round always plays Normal', () => {
+      unlockModes();
+      game.setGameMode('no-flags');
+      game.prepareMatch('beginner', 'defeat', 10);
+      expect(game.gameMode()).toBe('normal');
+      game.setGameMode('fog');
+      expect(game.gameMode()).toBe('normal');
+    });
+  });
+
+  describe('quests', () => {
+    const quest = (id: string) =>
+      TestBed.inject(QuestService)
+        .list()
+        .find((entry) => entry.quest.id === id);
+
+    /** A Beginner board with one mine in the corner and a number next to it. */
+    function playCornerBoard(): void {
+      game.board.set(gridFromLayout(['*........', ...Array(8).fill('.........')]));
+      game.status.set('playing');
+    }
+
+    it('a win counts, with the flags, chords and hints of that game', () => {
+      playCornerBoard();
+      game.reveal(0, 1); // a 1 next to the mine
+      game.toggleFlag(0, 0);
+      game.chord(0, 1); // opens the rest
+      expect(game.status()).toBe('won');
+
+      expect(quest('first-win')?.completedAt).not.toBeNull();
+      expect(quest('chords')?.progress).toBe(1);
+      expect(quest('no-flags')?.completedAt).toBeNull(); // One flag was placed.
+      expect(quest('streak')?.progress).toBe(1);
+    });
+
+    it('a win without flags completes "No flags needed"', () => {
+      playCornerBoard();
+      revealAllSafeCells();
+      expect(game.status()).toBe('won');
+      expect(quest('no-flags')?.completedAt).not.toBeNull();
+    });
+
+    it('removing a flag again still counts as having placed one', () => {
+      playCornerBoard();
+      game.toggleFlag(5, 5);
+      game.toggleFlag(5, 5);
+      revealAllSafeCells();
+      expect(quest('no-flags')?.completedAt).toBeNull();
+    });
+
+    it('a chord that opens nothing is not counted', () => {
+      playCornerBoard();
+      game.reveal(0, 1);
+      game.chord(0, 1); // No flag next to it yet: nothing happens.
+      revealAllSafeCells();
+      expect(quest('chords')?.progress).toBe(0);
+    });
+
+    it('a loss counts as a finished game and ends a streak', () => {
+      playCornerBoard();
+      revealAllSafeCells();
+      game.newGame();
+      playCornerBoard();
+      game.reveal(0, 0);
+      expect(game.status()).toBe('lost');
+
+      expect(quest('regular')?.progress).toBe(2);
+      expect(quest('streak')?.progress).toBe(0);
+    });
+
+    it('the counts start again with every game', () => {
+      playCornerBoard();
+      game.toggleFlag(5, 5);
+      game.newGame();
+      playCornerBoard();
+      revealAllSafeCells();
+      expect(quest('no-flags')?.completedAt).not.toBeNull();
+    });
+
+    it('a 1v1 round does not count as a normal game', () => {
+      game.prepareMatch('beginner', 'defeat', 10);
+      game.startMatchRound(gridFromLayout(['*........', ...Array(8).fill('.........')]), {
+        row: 8,
+        col: 8,
+      });
+      revealAllSafeCells();
+      expect(game.status()).toBe('won');
+      expect(quest('first-win')?.progress).toBe(0);
     });
   });
 

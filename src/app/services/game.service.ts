@@ -1,4 +1,5 @@
 import { computed, DestroyRef, inject, Injectable, signal } from '@angular/core';
+import { GameModeId } from '../models/game-mode.model';
 import { MineRule, Position } from '../models/match.model';
 import {
   DifficultyId,
@@ -8,8 +9,10 @@ import {
   PRESETS,
 } from '../models/game.model';
 import { BestTimeKey, BestTimesService } from './best-times.service';
+import { QuestService } from './quest.service';
 import { SettingsService } from './settings.service';
 import {
+  bounceFlag,
   chordCell,
   countFlags,
   coverHitMines,
@@ -25,6 +28,9 @@ import {
 } from './board-logic';
 import { findHint, generateNoGuessBoard, Hint } from './solver';
 
+/** Bouncy flags: how often a flag hops. */
+const BOUNCE_EVERY_MS = 6000;
+
 /** How long "Mine hit" stays on screen. A bit shorter than its CSS animation (board.scss). */
 const PENALTY_FLASH_MS = 1300;
 
@@ -38,6 +44,7 @@ export interface PenaltyFlash {
 export class GameService {
   private readonly bestTimes = inject(BestTimesService);
   private readonly settings = inject(SettingsService);
+  private readonly quests = inject(QuestService);
 
   readonly difficulty = signal<DifficultyId>('beginner');
   readonly config = signal<GameConfig>(PRESETS[0]);
@@ -57,9 +64,14 @@ export class GameService {
   readonly noHintAvailable = signal(false);
   /** Games won with hints don't count for best times. */
   readonly hintsUsed = signal(0);
+  /** Counted for quests: flags the player placed, and chords that opened something. */
+  private flagsPlaced = 0;
+  private chords = 0;
 
   /** 'match' while a 1v1 round is set up or played. The match rules replace the settings. */
   readonly mode = signal<'solo' | 'match'>('solo');
+  /** The game mode of this game. Fixed when the game starts; 1v1 rounds always play Normal. */
+  readonly gameMode = signal<GameModeId>(this.chosenGameMode());
   /** Blocks clicks, for example during the 1v1 countdown. */
   readonly inputLocked = signal(false);
   readonly mineRule = signal<MineRule>('defeat');
@@ -80,7 +92,8 @@ export class GameService {
   /** Which best-time record this game counts for. Custom boards have none. */
   readonly bestTimeKey = computed((): BestTimeKey | null => {
     const difficulty = this.difficulty();
-    if (difficulty === 'custom') return null;
+    // Records are only for the normal game, so a mode can't make them easier or harder.
+    if (difficulty === 'custom' || this.gameMode() !== 'normal') return null;
     return this.isNoGuess() ? `${difficulty}-ng` : difficulty;
   });
 
@@ -91,6 +104,7 @@ export class GameService {
   random: RandomFn = Math.random;
 
   private timerId: ReturnType<typeof setInterval> | undefined;
+  private bounceTimer: ReturnType<typeof setInterval> | undefined;
   private startedAt = 0;
   private finalMs = 0;
   private flashTimer: ReturnType<typeof setTimeout> | undefined;
@@ -114,10 +128,27 @@ export class GameService {
     this.noGuessFallback.set(false);
     this.clearHint();
     this.hintsUsed.set(0);
+    this.flagsPlaced = 0;
+    this.chords = 0;
     this.minesHit.set(0);
     clearTimeout(this.flashTimer);
     this.penaltyFlash.set(null);
     this.finalMs = 0;
+    this.gameMode.set(this.chosenGameMode());
+    if (this.gameMode() === 'no-flags') this.flagMode.set(false);
+  }
+
+  /** Picks a mode from the modes dialog. It starts a new game: a mode can't change halfway. */
+  setGameMode(mode: GameModeId): void {
+    if (!this.quests.isModeUnlocked(mode) || this.mode() === 'match') return;
+    this.settings.update({ gameMode: mode });
+    this.newGame();
+  }
+
+  private chosenGameMode(): GameModeId {
+    if (this.mode() === 'match') return 'normal';
+    const mode = this.settings.settings().gameMode;
+    return this.quests.isModeUnlocked(mode) ? mode : 'normal';
   }
 
   /** 1v1: show an empty board of the right size and block input until the countdown ends. */
@@ -168,6 +199,7 @@ export class GameService {
   }
 
   setFlagMode(on: boolean): void {
+    if (on && this.gameMode() === 'no-flags') return;
     this.flagMode.set(on);
   }
 
@@ -211,9 +243,11 @@ export class GameService {
   }
 
   toggleFlag(row: number, col: number): void {
-    if (this.inputLocked() || this.isOver()) return;
+    if (this.inputLocked() || this.isOver() || this.gameMode() === 'no-flags') return;
     this.clearHint();
-    this.board.set(toggleFlag(this.board(), row, col));
+    const next = toggleFlag(this.board(), row, col);
+    if (next[row][col].isFlagged && !this.board()[row][col].isFlagged) this.flagsPlaced++;
+    this.board.set(next);
   }
 
   /** Points out one move that logic proves is right. Only works once the game has started. */
@@ -227,7 +261,9 @@ export class GameService {
 
   chord(row: number, col: number): void {
     if (this.inputLocked() || this.status() !== 'playing') return;
-    this.applyMove(chordCell(this.board(), row, col));
+    const next = chordCell(this.board(), row, col);
+    if (next !== this.board()) this.chords++;
+    this.applyMove(next);
   }
 
   /** Places the mines around the first click, solvable without guessing if that mode is on. */
@@ -282,16 +318,43 @@ export class GameService {
     if (result === 'won' && key && this.hintsUsed() === 0 && this.mode() === 'solo') {
       this.isNewBest.set(this.bestTimes.record(key, this.elapsedSeconds()));
     }
+    // A 1v1 round is reported by the match, which knows who won.
+    if (this.mode() === 'solo') this.reportToQuests(result);
+  }
+
+  private reportToQuests(result: 'won' | 'lost'): void {
+    const difficulty = this.difficulty();
+    if (result === 'lost') {
+      this.quests.record({ type: 'game-lost', difficulty, chords: this.chords });
+      return;
+    }
+    this.quests.record({
+      type: 'game-won',
+      difficulty,
+      seconds: this.elapsedSeconds(),
+      noGuess: this.isNoGuess(),
+      hintsUsed: this.hintsUsed(),
+      flagsPlaced: this.flagsPlaced,
+      chords: this.chords,
+    });
   }
 
   private startTimer(): void {
     this.startedAt = Date.now();
     this.timerId = setInterval(() => this.updateElapsed(), 250);
+    if (this.gameMode() === 'bouncy') {
+      this.bounceTimer = setInterval(
+        () => this.board.set(bounceFlag(this.board(), this.random)),
+        BOUNCE_EVERY_MS,
+      );
+    }
   }
 
   private stopTimer(): void {
     clearInterval(this.timerId);
+    clearInterval(this.bounceTimer);
     this.timerId = undefined;
+    this.bounceTimer = undefined;
   }
 
   /** Never negative, even if the computer's clock is set back during a game. */

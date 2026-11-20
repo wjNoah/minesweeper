@@ -7,11 +7,13 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { BOARD_THEMES, TileImageMode } from '../../models/appearance.model';
+import { BOARD_THEMES, BoardThemeId, TileImageMode } from '../../models/appearance.model';
 import { CellState } from '../../models/cell.model';
+import { Quest, questForTheme } from '../../models/quest.model';
 import { CELL_SCALES, Settings, ThemeSetting } from '../../models/settings.model';
 import { AppearanceService } from '../../services/appearance.service';
 import { ImageError } from '../../services/image-resize';
+import { QuestService } from '../../services/quest.service';
 import { SettingsService } from '../../services/settings.service';
 import { Cell } from '../cell/cell';
 import { PicturePicker } from '../picture-picker/picture-picker';
@@ -44,9 +46,15 @@ const PREVIEW_BASE: CellState = {
 export class CustomizeDialog {
   protected readonly appearance = inject(AppearanceService);
   protected readonly settings = inject(SettingsService);
+  private readonly quests = inject(QuestService);
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
   protected readonly themes = BOARD_THEMES;
+
+  /** The quest a theme is still waiting for, or null when it can be used. */
+  protected lockedBy(theme: BoardThemeId): Quest | null {
+    return this.quests.isThemeUnlocked(theme) ? null : (questForTheme(theme) ?? null);
+  }
   protected readonly modes = MODES;
   protected readonly cellScales = CELL_SCALES;
   protected readonly tileModes: readonly { value: TileImageMode; label: string }[] = [

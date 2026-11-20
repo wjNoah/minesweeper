@@ -1,4 +1,4 @@
-import { effect, Injectable, signal } from '@angular/core';
+import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import {
   AppearanceChoices,
   BoardThemeId,
@@ -7,6 +7,7 @@ import {
   TileImageMode,
 } from '../models/appearance.model';
 import { ImageError, resizeImage } from './image-resize';
+import { QuestService } from './quest.service';
 
 export const APPEARANCE_KEY = 'minesweeper.appearance';
 export const PAGE_IMAGE_KEY = 'minesweeper.pageImage';
@@ -20,17 +21,23 @@ const ICON_MAX_SIDE = 160;
 /** Board theme and the user's own pictures. Everything stays in this browser. */
 @Injectable({ providedIn: 'root' })
 export class AppearanceService {
+  private readonly quests = inject(QuestService);
   readonly choices = signal<AppearanceChoices>(parseAppearance(readJson(APPEARANCE_KEY)));
   readonly pageImage = signal<string | null>(read(PAGE_IMAGE_KEY));
   readonly tileImage = signal<string | null>(read(TILE_IMAGE_KEY));
   readonly flagImage = signal<string | null>(read(FLAG_IMAGE_KEY));
   readonly mineImage = signal<string | null>(read(MINE_IMAGE_KEY));
+  /** The chosen theme, unless it is still locked (for example after its saved data was edited). */
+  readonly activeTheme = computed(() => {
+    const theme = this.choices().boardTheme;
+    return this.quests.isThemeUnlocked(theme) ? theme : DEFAULT_APPEARANCE.boardTheme;
+  });
 
   constructor() {
     effect(() => {
-      const { boardTheme, tileImageMode } = this.choices();
+      const { tileImageMode } = this.choices();
       const root = document.documentElement;
-      root.dataset['boardTheme'] = boardTheme;
+      root.dataset['boardTheme'] = this.activeTheme();
       setImage(root, '--page-image', 'pageImage', this.pageImage(), 'on');
       setImage(root, '--tile-image', 'tileImage', this.tileImage(), tileImageMode);
       setImage(root, '--flag-image', 'flagImage', this.flagImage(), 'on');
@@ -39,6 +46,7 @@ export class AppearanceService {
   }
 
   setBoardTheme(boardTheme: BoardThemeId): void {
+    if (!this.quests.isThemeUnlocked(boardTheme)) return;
     this.updateChoices({ boardTheme });
   }
 

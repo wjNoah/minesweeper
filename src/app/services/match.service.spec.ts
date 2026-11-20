@@ -5,6 +5,7 @@ import { gridWithMines } from './board-logic';
 import { ConnectionService, ConnectionState, Role } from './connection.service';
 import { GameService } from './game.service';
 import { MatchService } from './match.service';
+import { QuestService } from './quest.service';
 import { isSolvableWithoutGuessing } from './solver';
 
 function seededRandom(seed: number): () => number {
@@ -413,6 +414,64 @@ describe('MatchService', () => {
     vi.advanceTimersByTime(5000);
     expect(game.status()).toBe('ready');
     expect(match.phase()).toBe('lobby');
+  });
+
+  describe('quests', () => {
+    const done = (id: string) =>
+      TestBed.inject(QuestService)
+        .list()
+        .find((entry) => entry.quest.id === id)?.completedAt !== null;
+
+    it('a win against a friend counts once both results are in', () => {
+      setUp('guest');
+      startPocketRound();
+      for (const { row, col } of POCKET_CELLS) play(row, col);
+      expect(match.outcome()).toBe('won');
+      expect(done('beat-friend')).toBe(false); // The opponent's result is still on its way.
+
+      connection.deliver({ type: 'finished', round: 1, finish: { kind: 'stopped', totalMs: 9 } });
+      expect(done('beat-friend')).toBe(true);
+      expect(done('beat-bot')).toBe(false);
+    });
+
+    it('an early "win" that turns into a loss does not count', () => {
+      setUp('guest');
+      startPocketRound();
+      vi.advanceTimersByTime(5000);
+      for (const { row, col } of POCKET_CELLS) play(row, col);
+      // The opponent cleared at the same moment, in a faster time.
+      connection.deliver({ type: 'finished', round: 1, finish: { kind: 'cleared', totalMs: 10 } });
+      expect(match.outcome()).toBe('lost');
+      expect(done('beat-friend')).toBe(false);
+    });
+
+    it('a lost match does not count', () => {
+      setUp('guest');
+      startPocketRound();
+      connection.deliver({ type: 'finished', round: 1, finish: { kind: 'cleared', totalMs: 10 } });
+      expect(match.outcome()).toBe('lost');
+      expect(done('beat-friend')).toBe(false);
+    });
+
+    it('beating the Hard bot completes both bot quests', async () => {
+      setUp('host');
+      match.playBot();
+      match.setBotLevel('hard');
+      TestBed.tick();
+      match.startRound();
+      await vi.advanceTimersByTimeAsync(3000);
+
+      // Clear the board before the bot makes its first move.
+      for (const cell of game.board().flat()) {
+        if (!cell.hasMine) play(cell.row, cell.col);
+      }
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(match.outcome()).toBe('won');
+      expect(done('beat-bot')).toBe(true);
+      expect(done('beat-hard-bot')).toBe(true);
+      expect(done('beat-friend')).toBe(false);
+    });
   });
 
   describe('against the bot', () => {

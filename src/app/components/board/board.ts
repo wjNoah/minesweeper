@@ -11,6 +11,7 @@ import {
   untracked,
 } from '@angular/core';
 import { fitCellSize } from '../../models/board-fit';
+import { targetColumn } from '../../models/game-mode.model';
 import { AppearanceService } from '../../services/appearance.service';
 import { cursorStep, Position } from '../../models/navigation';
 import { getNeighbors } from '../../services/board-logic';
@@ -147,7 +148,20 @@ export class Board {
 
   protected onPrimary(row: number, col: number): void {
     this.cursorPosition.set({ row, col });
-    this.game.primaryAction(row, col);
+    this.game.primaryAction(row, this.target(col));
+  }
+
+  protected onSecondary(row: number, col: number): void {
+    this.game.secondaryAction(row, this.target(col));
+  }
+
+  protected onChord(row: number, col: number): void {
+    this.game.chord(row, this.target(col));
+  }
+
+  /** The column a move really lands on (Mirror mode moves it). The cursor itself stays put. */
+  private target(col: number): number {
+    return targetColumn(this.game.gameMode(), this.game.config().cols, col);
   }
 
   protected onKeydown(event: KeyboardEvent): void {
@@ -178,11 +192,11 @@ export class Board {
     } else if (key === keys.flagMode) {
       this.game.setFlagMode(!this.game.flagMode());
     } else if (key === keys.flag && active) {
-      this.game.toggleFlag(active.row, active.col);
+      this.game.toggleFlag(active.row, this.target(active.col));
     } else if ((key === 'enter' || key === keys.reveal) && active && (focusInBoard || noFocus)) {
       // Stop the browser from also clicking the focused button or scrolling the page.
       event.preventDefault();
-      this.game.revealOrChord(active.row, active.col);
+      this.game.revealOrChord(active.row, this.target(active.col));
     } else if (step && focusInBoard) {
       event.preventDefault();
       this.moveCursor(step);

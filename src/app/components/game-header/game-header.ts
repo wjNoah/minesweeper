@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, output } from '@angular/core';
+import { gameModeLabel } from '../../models/game-mode.model';
 import { BestTimesService } from '../../services/best-times.service';
 import { GameService } from '../../services/game.service';
 
@@ -11,6 +12,10 @@ import { GameService } from '../../services/game.service';
 export class GameHeader {
   protected readonly game = inject(GameService);
   private readonly bestTimes = inject(BestTimesService);
+  /** The player wants to change the game mode. */
+  readonly openModes = output<void>();
+
+  protected readonly modeLabel = computed(() => gameModeLabel(this.game.gameMode()));
 
   /** Best time for the current difficulty and mode. Custom boards have none. */
   protected readonly bestLabel = computed(() => {
@@ -21,8 +26,9 @@ export class GameHeader {
 
   protected readonly boardSize = computed(() => {
     const { rows, cols, mines } = this.game.config();
-    const mode = this.game.isNoGuess() ? ', no guessing' : '';
-    return `${cols} × ${rows} board, ${mines} mines${mode}`;
+    const noGuess = this.game.isNoGuess() ? ', no guessing' : '';
+    const mode = this.game.gameMode() === 'normal' ? '' : `, ${this.modeLabel()} mode`;
+    return `${cols} × ${rows} board, ${mines} mines${noGuess}${mode}`;
   });
 
   protected formatTime(seconds: number): string {

@@ -10,6 +10,7 @@
   <div
     class="board"
     [class.mine-hit]="game.penaltyFlash()"
+    [attr.data-game-mode]="game.gameMode()"
     [attr.data-status]="game.status()"
     [style.--board-rows]="game.config().rows"
     [style.--board-cols]="game.config().cols"
@@ -35,8 +36,8 @@
             [customMine]="customMine()"
             [haptics]="settings.settings().haptics"
             (primary)="onPrimary(cell.row, cell.col)"
-            (secondary)="game.secondaryAction(cell.row, cell.col)"
-            (chord)="game.chord(cell.row, cell.col)"
+            (secondary)="onSecondary(cell.row, cell.col)"
+            (chord)="onChord(cell.row, cell.col)"
             (hovered)="onHover(cell.row, cell.col)"
           />
         }

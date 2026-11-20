@@ -17,15 +17,9 @@ import {
 import { BestTimesService } from '../../services/best-times.service';
 import { SettingsService } from '../../services/settings.service';
 
-type ToggleKey =
-  'noGuess' | 'safeArea' | 'chordOnClick' | 'highlightNeighbors' | 'haptics' | 'showGuide';
+type ToggleKey = 'safeArea' | 'chordOnClick' | 'highlightNeighbors' | 'haptics' | 'showGuide';
 
 const TOGGLES: readonly { key: ToggleKey; label: string; hint: string }[] = [
-  {
-    key: 'noGuess',
-    label: 'No guessing',
-    hint: 'Every board can be solved by logic alone. Best times are kept separately.',
-  },
   {
     key: 'safeArea',
     label: 'Open an area on the first click',

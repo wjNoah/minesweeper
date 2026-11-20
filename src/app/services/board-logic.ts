@@ -189,6 +189,27 @@ export function isWon(grid: Grid): boolean {
   return grid.flat().every((cell) => cell.hasMine || cell.isRevealed);
 }
 
+/**
+ * Bouncy flags: one flag hops to a hidden, unflagged cell next to it. Flags on mines that were
+ * hit stay put. Returns the same grid when no flag can move.
+ */
+export function bounceFlag(grid: Grid, random: RandomFn = Math.random): Grid {
+  const moves = grid
+    .flat()
+    .filter((cell) => cell.isFlagged && !cell.isHit)
+    .flatMap((flag) =>
+      getNeighbors(grid, flag.row, flag.col)
+        .filter((n) => !n.isRevealed && !n.isFlagged)
+        .map((to) => ({ from: flag, to })),
+    );
+  if (moves.length === 0) return grid;
+
+  const { from, to } = moves[Math.floor(random() * moves.length)];
+  return updateCell(updateCell(grid, from.row, from.col, { isFlagged: false }), to.row, to.col, {
+    isFlagged: true,
+  });
+}
+
 /** After a win, every mine gets a flag so the counter shows 0. */
 export function flagAllMines(grid: Grid): Grid {
   return grid.map((line) =>

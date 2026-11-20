@@ -105,6 +105,23 @@ describe('App', () => {
     expect(host.querySelector('app-about')).toBeNull();
   });
 
+  it('has a Quests button that says how many are done and opens the list', async () => {
+    const quests = host.querySelector<HTMLButtonElement>('[aria-label^="Quests"]');
+    expect(quests?.getAttribute('aria-label')).toBe('Quests, 0 of 14 done');
+    quests?.click();
+    await fixture.whenStable();
+    expect(host.querySelector<HTMLDialogElement>('app-quests-dialog dialog')?.open).toBe(true);
+  });
+
+  it('the Modes button opens the modes; No guessing is no longer in the settings', async () => {
+    button('Modes')?.click();
+    await fixture.whenStable();
+    expect(host.querySelector<HTMLDialogElement>('app-modes-dialog dialog')?.open).toBe(true);
+    const settingsSwitches = [...host.querySelectorAll('app-settings-dialog label.row .label')];
+    expect(settingsSwitches.map((l) => l.textContent?.trim())).not.toContain('No guessing');
+    expect(host.querySelector('app-modes-dialog')?.textContent).toContain('No guessing');
+  });
+
   it('opens the feedback and 1v1 dialogs from their buttons', async () => {
     button('Send feedback')?.click();
     await fixture.whenStable();
