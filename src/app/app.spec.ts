@@ -107,7 +107,7 @@ describe('App', () => {
 
   it('has a Quests button that says how many are done and opens the list', async () => {
     const quests = host.querySelector<HTMLButtonElement>('[aria-label^="Quests"]');
-    expect(quests?.getAttribute('aria-label')).toBe('Quests, 0 of 13 done');
+    expect(quests?.getAttribute('aria-label')).toBe('Quests, 0 of 14 done');
     quests?.click();
     await fixture.whenStable();
     expect(host.querySelector<HTMLDialogElement>('app-quests-dialog dialog')?.open).toBe(true);

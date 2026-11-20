@@ -18,10 +18,10 @@ describe('CustomizeDialog themes', () => {
 
   beforeEach(() => localStorage.clear());
 
-  it('shows all seventeen themes, eleven of them locked at first', () => {
+  it('shows all eighteen themes, twelve of them locked at first', () => {
     create();
-    expect(host.querySelectorAll('.theme').length).toBe(17);
-    expect(host.querySelectorAll('.theme.locked').length).toBe(11);
+    expect(host.querySelectorAll('.theme').length).toBe(18);
+    expect(host.querySelectorAll('.theme.locked').length).toBe(12);
   });
 
   it('marks a quest theme as locked and names the quest, also for screen readers', () => {

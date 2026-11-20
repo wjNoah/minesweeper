@@ -20,6 +20,7 @@ export const BOARD_THEMES = [
   { id: 'notebook', label: 'Notebook' },
   { id: 'royal', label: 'Royal' },
   { id: 'galaxy', label: 'Galaxy' },
+  { id: 'retro', label: 'OG' },
 ] as const;
 
 export type BoardThemeId = (typeof BOARD_THEMES)[number]['id'];

@@ -45,6 +45,10 @@ type GameWon = Extract<QuestEvent, { type: 'game-won' }>;
 const isRealWin = (event: QuestEvent): event is GameWon =>
   event.type === 'game-won' && event.difficulty !== 'custom';
 
+/** A solo game that ended, won or lost. Custom boards don't count. */
+const isFinishedGame = (event: QuestEvent): boolean =>
+  (event.type === 'game-won' || event.type === 'game-lost') && event.difficulty !== 'custom';
+
 /** Counts each event that matches by one. */
 const countWhen =
   (matches: (event: QuestEvent) => boolean) =>
@@ -143,9 +147,15 @@ export const QUESTS: readonly Quest[] = [
       { kind: 'theme', theme: 'royal' },
       { kind: 'mode', mode: 'bouncy' },
     ],
-    advance: countWhen(
-      (e) => (e.type === 'game-won' || e.type === 'game-lost') && e.difficulty !== 'custom',
-    ),
+    advance: countWhen(isFinishedGame),
+  },
+  {
+    id: 'veteran',
+    title: 'Veteran',
+    description: 'Finish 50 games, won or lost',
+    goal: 50,
+    rewards: [{ kind: 'theme', theme: 'retro' }],
+    advance: countWhen(isFinishedGame),
   },
   {
     id: 'beat-bot',

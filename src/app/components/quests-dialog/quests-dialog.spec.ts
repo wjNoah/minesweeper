@@ -31,12 +31,12 @@ describe('QuestsDialog', () => {
 
   it('says how many quests are done', () => {
     expect(host.querySelector('.summary')?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
-      '1 of 13 done',
+      '1 of 14 done',
     );
   });
 
   it('lists every quest, with the finished ones at the end', () => {
-    expect(titles().length).toBe(13);
+    expect(titles().length).toBe(14);
     expect(titles().at(-1)).toBe('First sweep');
     expect(titles()[0]).toBe('Getting the hang of it');
   });

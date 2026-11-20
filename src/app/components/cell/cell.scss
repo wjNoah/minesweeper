@@ -10,10 +10,14 @@
   height: var(--cell-size);
   padding: 0;
   border: 0;
-  border-radius: 5px;
+  // A theme may set its own corners (OG has square ones).
+  border-radius: var(--tile-radius, 5px);
   background-color: var(--tile);
-  // Raised edge: hidden and revealed cells differ by shape, not only by color.
-  box-shadow: inset 0 -3px 0 var(--tile-edge);
+  // Raised edge: hidden and revealed cells differ by shape, not only by color. A theme with
+  // --tile-light also gets a light upper-left edge, for an old-fashioned raised button.
+  box-shadow:
+    inset 0 -3px 0 var(--tile-edge),
+    inset 2px 2px 0 var(--tile-light, transparent);
   color: var(--ink);
   font: 700 calc(var(--cell-size) * 0.5) / 1 var(--board-font, var(--font));
   font-variant-numeric: tabular-nums;

@@ -637,6 +637,42 @@ $special-themes: (
           'radial-gradient(50% 40% at 15% 85%, rgb(59 130 246 / 0.16), transparent 70%)'
       ),
   ),
+  retro: (
+    scheme: light,
+    colors: (
+      paper: #d9d4c7,
+      surface: #e8e4d8,
+      line: #a39d8c,
+      track: #cfc9ba,
+      tile: #c9c3b3,
+      tile-hover: #d3cdbe,
+      tile-edge: #7d7768,
+      tile-light: #f5f2ea,
+      tile-open: #ece8de,
+      board-bg: #bdb6a4,
+      board-line: #8f8978,
+      ink: #1f1d18,
+      ink-muted: #4a4539,
+      focus: #1d5f8a,
+      danger: #a1361e,
+      success: #30561a,
+      flag: #a1361e,
+      n1: #1d5f8a,
+      n2: #3d6b1f,
+      n3: #a1361e,
+      n4: #5a2d82,
+      n5: #8a4b00,
+      n6: #0d6e66,
+      n7: #1f1d18,
+      n8: #4a4539,
+      tile-radius: 0,
+    ),
+    // A fine dither, like an old desktop wallpaper.
+    art: string.unquote(
+        'repeating-conic-gradient(rgb(0 0 0 / 0.04) 0% 25%, transparent 0% 50%) 0 0 / 4px 4px'
+      ),
+    font: string.unquote("ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace"),
+  ),
 );
 
 // Called at the end of styles.scss, so these win over the light and dark text colors there.

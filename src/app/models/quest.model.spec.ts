@@ -123,6 +123,17 @@ describe('quests', () => {
     expect(progressOf(play(won(), lost(), lost()), 'regular')).toBe(3);
   });
 
+  it('"Veteran" needs 50 finished games and unlocks the OG theme', () => {
+    const games = (n: number) => Array.from({ length: n }, (_, i) => (i % 2 ? won() : lost()));
+    const almost = play(...games(49));
+    expect(progressOf(almost, 'veteran')).toBe(49);
+    expect(isDone(almost, 'veteran')).toBe(false);
+    expect(isDone(almost, 'regular')).toBe(true);
+
+    expect(isDone(play(...games(50)), 'veteran')).toBe(true);
+    expect(questForTheme('retro')?.id).toBe('veteran');
+  });
+
   it('1v1 quests know the bot from a friend and the bot’s strength', () => {
     const bot = (botLevel: 'easy' | 'hard'): QuestEvent => ({
       type: 'match-won',
@@ -169,6 +180,7 @@ describe('quest rewards', () => {
       'notebook',
       'royal',
       'galaxy',
+      'retro',
     ]);
     for (const free of ['classic', 'ocean', 'forest', 'sunset', 'lavender', 'slate'] as const) {
       expect(questForTheme(free)).toBeUndefined();

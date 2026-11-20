@@ -31,6 +31,7 @@
       notebook: 'chords',
       royal: 'regular',
       galaxy: 'beat-friend',
+      retro: 'veteran',
     };
     var quests = read('minesweeper.quests');
     var rewardQuest = quests[rewards[appearance.boardTheme]];

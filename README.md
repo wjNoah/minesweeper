@@ -416,6 +416,7 @@ six original themes are free for everyone.
 | Hot streak (3 wins in a row)          | Neon Nights theme              |
 | Chord player (50 chords)              | Notebook theme                 |
 | Regular (25 games)                    | Royal theme, Bouncy flags mode |
+| Veteran (50 games)                    | OG theme                       |
 | Beat the bot                          | Terminal theme                 |
 | Machine breaker (beat the Hard bot)   | Lava theme                     |
 | Duelist (beat a friend)               | Galaxy theme                   |
