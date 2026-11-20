@@ -1,4 +1,5 @@
 @use 'sass:map';
+@use 'sass:string';
 
 // Color themes for the page and the board, each in a light and a dark version.
 // Page: paper (background), surface (cards), line, track (segmented controls).
@@ -6,6 +7,43 @@
 // Text and number colors stay the same; every theme keeps them at 4.5:1 contrast or more.
 // The selectors work on :root (the real board) and on any element with data-board-theme
 // (the previews in the customize dialog), so the colors live only here.
+// Text and number colors for light and dark mode. The page uses them (styles.scss), and every
+// original theme's preview gets them too, so a preview never borrows the text color of a quest
+// theme that is active on the page.
+$text-light: (
+  ink: #1d1c1a,
+  ink-muted: #66645e,
+  focus: #2f62d9,
+  danger: #c8372d,
+  success: #2c7a47,
+  flag: #c8372d,
+  n1: #2a56c9,
+  n2: #2c7a47,
+  n3: #c33a2f,
+  n4: #5b3fb0,
+  n5: #93450f,
+  n6: #12716f,
+  n7: #1d1c1a,
+  n8: #66645e,
+);
+
+$text-dark: (
+  ink: #ecebe6,
+  ink-muted: #a3a097,
+  focus: #7aa2ff,
+  danger: #e0574b,
+  success: #6cc68b,
+  flag: #ef6a5e,
+  n1: #86aaff,
+  n2: #74c98f,
+  n3: #f2867b,
+  n4: #c1a9ff,
+  n5: #f0a868,
+  n6: #5fd2c8,
+  n7: #ecebe6,
+  n8: #a3a097,
+);
+
 $board-themes: (
   classic: (
     light: (
@@ -182,18 +220,439 @@ $board-themes: (
   }
 
   #{$root-light} {
-    @include board-vars(map.get($modes, light));
+    @include board-vars(map.merge(map.get($modes, light), $text-light));
   }
 
   @media (prefers-color-scheme: dark) {
     #{$root-dark}:not([data-theme='light']),
     :root:not([data-theme='light']) #{$own} {
-      @include board-vars(map.get($modes, dark));
+      @include board-vars(map.merge(map.get($modes, dark), $text-dark));
     }
   }
 
   #{$root-dark}[data-theme='dark'],
   :root[data-theme='dark'] #{$own} {
-    @include board-vars(map.get($modes, dark));
+    @include board-vars(map.merge(map.get($modes, dark), $text-dark));
+  }
+}
+
+// Themes unlocked by quests. Each sets every color itself, text and numbers too, so it looks the
+// same in light and dark mode. Optional extras: art (a background drawn in CSS) and font (for
+// the numbers on the board). Every number color keeps 4.5:1 contrast on its opened cells.
+$special-themes: (
+  blueprint: (
+    scheme: dark,
+    colors: (
+      paper: #0f3a6b,
+      surface: #134577,
+      line: #2f6aa3,
+      track: #11406f,
+      tile: #1a5590,
+      tile-hover: #2262a3,
+      tile-edge: #6fa8e6,
+      tile-open: #0d3360,
+      board-bg: #11417a,
+      board-line: #4f8cc9,
+      ink: #f1f7ff,
+      ink-muted: #b5d3f3,
+      focus: #ffd166,
+      danger: #d93636,
+      success: #8dffc7,
+      flag: #ffd166,
+      n1: #9fd0ff,
+      n2: #8dffc7,
+      n3: #ffa3a3,
+      n4: #d6b8ff,
+      n5: #ffd166,
+      n6: #7fffee,
+      n7: #f1f7ff,
+      n8: #b5d3f3,
+    ),
+    // A drafting grid: fine lines every 24px, a stronger line every 96px.
+    art: string.unquote(
+        'repeating-linear-gradient(0deg, rgb(255 255 255 / 0.1) 0 1px, transparent 1px 96px), ' +
+          'repeating-linear-gradient(90deg, rgb(255 255 255 / 0.1) 0 1px, transparent 1px 96px), ' +
+          'repeating-linear-gradient(0deg, rgb(255 255 255 / 0.04) 0 1px, transparent 1px 24px), ' +
+          'repeating-linear-gradient(90deg, rgb(255 255 255 / 0.04) 0 1px, transparent 1px 24px)'
+      ),
+  ),
+  candy: (
+    scheme: light,
+    colors: (
+      paper: #fff0f6,
+      surface: #ffffff,
+      line: #f6cfe0,
+      track: #fde1ec,
+      tile: #ffc6dd,
+      tile-hover: #ffb3d1,
+      tile-edge: #f28cb5,
+      tile-open: #fffafc,
+      board-bg: #fff5f9,
+      board-line: #f8d5e4,
+      ink: #3a1630,
+      ink-muted: #85456d,
+      focus: #7a3cff,
+      danger: #d6204e,
+      success: #18774d,
+      flag: #b81d55,
+      n1: #2f5bd8,
+      n2: #18774d,
+      n3: #d6204e,
+      n4: #7a3cff,
+      n5: #b4530b,
+      n6: #0f7c86,
+      n7: #3a1630,
+      n8: #85456d,
+    ),
+    // Polka dots: small, light and far apart, so they never break up the text.
+    art: string.unquote(
+        'radial-gradient(circle, rgb(242 140 181 / 0.22) 2px, transparent 2.5px) 0 0 / 40px 40px'
+      ),
+  ),
+  neon: (
+    scheme: dark,
+    colors: (
+      paper: #120a24,
+      surface: #1c1033,
+      line: #3a2560,
+      track: #26173f,
+      tile: #2b1a4a,
+      tile-hover: #3a2463,
+      tile-edge: #ff4fa3,
+      tile-open: #160d2a,
+      board-bg: #1a0f30,
+      board-line: #4a2a78,
+      ink: #f6e9ff,
+      ink-muted: #c4a8e0,
+      focus: #22e5ff,
+      danger: #cc2a60,
+      success: #3ff2b5,
+      flag: #ff4fa3,
+      n1: #22e5ff,
+      n2: #3ff2b5,
+      n3: #ff6fae,
+      n4: #c08cff,
+      n5: #ffb347,
+      n6: #8af7ff,
+      n7: #f6e9ff,
+      n8: #c4a8e0,
+    ),
+    // An 80s night: a sunset glow on the horizon and a cyan grid floor in the lower third.
+    art: string.unquote(
+        'radial-gradient(70% 40% at 50% 100%, rgb(255 179 71 / 0.3), transparent 70%), ' +
+          'radial-gradient(110% 60% at 50% 100%, rgb(255 79 163 / 0.35), transparent 70%), ' +
+          'repeating-linear-gradient(90deg, rgb(34 229 255 / 0.14) 0 1px, transparent 1px 72px) ' +
+          'bottom / 100% 34% no-repeat, ' +
+          'repeating-linear-gradient(0deg, rgb(34 229 255 / 0.14) 0 1px, transparent 1px 36px) ' +
+          'bottom / 100% 34% no-repeat, ' +
+          'linear-gradient(180deg, #120a24 0%, #1d0b33 60%, #3a0f43 100%)'
+      ),
+  ),
+  terminal: (
+    scheme: dark,
+    colors: (
+      paper: #050805,
+      surface: #0a120a,
+      line: #1d3a1f,
+      track: #0c1a0c,
+      tile: #0f2410,
+      tile-hover: #153218,
+      tile-edge: #2bbf55,
+      tile-open: #050a05,
+      board-bg: #071007,
+      board-line: #1d4a22,
+      ink: #b6ffb9,
+      ink-muted: #6fcf78,
+      focus: #7dff8e,
+      danger: #d93a32,
+      success: #7dff8e,
+      flag: #ffcc33,
+      n1: #39ff6a,
+      n2: #a8ff3e,
+      n3: #ffcc33,
+      n4: #66ffd9,
+      n5: #ff9f43,
+      n6: #4dd2ff,
+      n7: #e9ffe9,
+      n8: #8fbf94,
+    ),
+    // Scanlines and a soft glow in the middle, like an old monitor.
+    art: string.unquote(
+        'repeating-linear-gradient(0deg, rgb(57 255 106 / 0.04) 0 1px, transparent 1px 3px), ' +
+          'radial-gradient(80% 60% at 50% 40%, rgb(57 255 106 / 0.08), transparent 70%)'
+      ),
+    font: string.unquote("ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace"),
+  ),
+  lava: (
+    scheme: dark,
+    colors: (
+      paper: #120806,
+      surface: #1d0f0b,
+      line: #3a1d14,
+      track: #261310,
+      tile: #2e1d19,
+      tile-hover: #3a2621,
+      tile-edge: #ff5a1f,
+      tile-open: #1a0d09,
+      board-bg: #1f100c,
+      board-line: #5a2412,
+      ink: #ffe9dd,
+      ink-muted: #d9a48c,
+      focus: #ffb347,
+      danger: #d93a1f,
+      success: #9be564,
+      flag: #ff7a2f,
+      n1: #ffb347,
+      n2: #9be564,
+      n3: #ff6a5c,
+      n4: #ffd166,
+      n5: #ff8fab,
+      n6: #6fe3d6,
+      n7: #ffe9dd,
+      n8: #d9a48c,
+    ),
+    // Molten light rising from below.
+    art: string.unquote(
+        'radial-gradient(100% 50% at 50% 110%, rgb(255 90 31 / 0.45), transparent 70%), ' +
+          'radial-gradient(40% 25% at 20% 105%, rgb(255 179 71 / 0.25), transparent 70%), ' +
+          'radial-gradient(40% 25% at 85% 105%, rgb(255 90 31 / 0.25), transparent 70%)'
+      ),
+  ),
+  cat: (
+    scheme: light,
+    colors: (
+      paper: #fbf3ea,
+      surface: #fffaf4,
+      line: #ecd9c4,
+      track: #f3e3d1,
+      tile: #f2c99a,
+      tile-hover: #eebc85,
+      tile-edge: #d89a5e,
+      tile-open: #fffbf6,
+      board-bg: #fdf0e2,
+      board-line: #ecd2b5,
+      ink: #3d2618,
+      ink-muted: #7b5a43,
+      focus: #2f5bd8,
+      danger: #c0392b,
+      success: #2c7a47,
+      flag: #b8321f,
+      n1: #2f5bd8,
+      n2: #2c7a47,
+      n3: #c33a2f,
+      n4: #6b3fb0,
+      n5: #9a4a0f,
+      n6: #12716f,
+      n7: #3d2618,
+      n8: #7b5a43,
+    ),
+    // Paw prints, in two offset rows.
+    art: string.unquote(
+        'radial-gradient(ellipse 17px 14px at 70px 84px, rgb(216 154 94 / 0.16) 96%, transparent) 0px 0px / 140px 140px, ' +
+          'radial-gradient(circle 7px at 48px 62px, rgb(216 154 94 / 0.16) 96%, transparent) 0px 0px / 140px 140px, ' +
+          'radial-gradient(circle 7px at 61px 51px, rgb(216 154 94 / 0.16) 96%, transparent) 0px 0px / 140px 140px, ' +
+          'radial-gradient(circle 7px at 79px 51px, rgb(216 154 94 / 0.16) 96%, transparent) 0px 0px / 140px 140px, ' +
+          'radial-gradient(circle 7px at 92px 62px, rgb(216 154 94 / 0.16) 96%, transparent) 0px 0px / 140px 140px, ' +
+          'radial-gradient(ellipse 17px 14px at 70px 84px, rgb(216 154 94 / 0.1) 96%, transparent) 70px 70px / 140px 140px, ' +
+          'radial-gradient(circle 7px at 48px 62px, rgb(216 154 94 / 0.1) 96%, transparent) 70px 70px / 140px 140px, ' +
+          'radial-gradient(circle 7px at 61px 51px, rgb(216 154 94 / 0.1) 96%, transparent) 70px 70px / 140px 140px, ' +
+          'radial-gradient(circle 7px at 79px 51px, rgb(216 154 94 / 0.1) 96%, transparent) 70px 70px / 140px 140px, ' +
+          'radial-gradient(circle 7px at 92px 62px, rgb(216 154 94 / 0.1) 96%, transparent) 70px 70px / 140px 140px'
+      ),
+    font: string.unquote("ui-rounded, 'SF Pro Rounded', 'Nunito', system-ui, sans-serif"),
+  ),
+  arcade: (
+    scheme: dark,
+    colors: (
+      paper: #0b0b12,
+      surface: #15151f,
+      line: #2c2c44,
+      track: #1b1b2a,
+      tile: #22223a,
+      tile-hover: #2d2d4c,
+      tile-edge: #ffd23f,
+      tile-open: #0e0e18,
+      board-bg: #15151f,
+      board-line: #3a3a5c,
+      ink: #ffffff,
+      ink-muted: #b8b8d0,
+      focus: #4cc9ff,
+      danger: #d83a52,
+      success: #7cff6b,
+      flag: #ff5d73,
+      n1: #4cc9ff,
+      n2: #7cff6b,
+      n3: #ff5d73,
+      n4: #c77dff,
+      n5: #ffd23f,
+      n6: #3fffe0,
+      n7: #ffffff,
+      n8: #b8b8d0,
+    ),
+    // An arcade carpet: little dots in cyan, pink and yellow.
+    art: string.unquote(
+        'radial-gradient(circle, rgb(76 201 255 / 0.22) 2px, transparent 2.5px) 0 0 / 48px 48px, ' +
+          'radial-gradient(circle, rgb(255 93 115 / 0.22) 2px, transparent 2.5px) 24px 24px / 48px 48px, ' +
+          'radial-gradient(circle, rgb(255 210 63 / 0.18) 2px, transparent 2.5px) 24px 0 / 48px 48px'
+      ),
+  ),
+  chalkboard: (
+    scheme: dark,
+    colors: (
+      paper: #1f3a2b,
+      surface: #26473a,
+      line: #3e6655,
+      track: #2a4d3f,
+      tile: #2f5446,
+      tile-hover: #386453,
+      tile-edge: #1c3326,
+      tile-open: #1a3025,
+      board-bg: #5b3a24,
+      board-line: #7a5234,
+      ink: #f2f1e8,
+      ink-muted: #c3d1c6,
+      focus: #ffe08a,
+      danger: #c0392b,
+      success: #b8f2a6,
+      flag: #ff9b85,
+      n1: #a8d4ff,
+      n2: #b8f2a6,
+      n3: #ffb3a7,
+      n4: #e0c4ff,
+      n5: #ffe08a,
+      n6: #a6f2e6,
+      n7: #f2f1e8,
+      n8: #c3d1c6,
+    ),
+    // Chalk dust from wiping the board.
+    art: string.unquote(
+        'radial-gradient(40% 30% at 20% 30%, rgb(255 255 255 / 0.05), transparent 70%), ' +
+          'radial-gradient(35% 25% at 80% 70%, rgb(255 255 255 / 0.05), transparent 70%), ' +
+          'radial-gradient(30% 20% at 60% 15%, rgb(255 255 255 / 0.04), transparent 70%)'
+      ),
+  ),
+  notebook: (
+    scheme: light,
+    colors: (
+      paper: #fdfbf4,
+      surface: #ffffff,
+      line: #dfe6f1,
+      track: #eef2f8,
+      tile: #dce7f7,
+      tile-hover: #cddcf2,
+      tile-edge: #9fb7dc,
+      tile-open: #ffffff,
+      board-bg: #fdfbf4,
+      board-line: #c9d6ea,
+      ink: #1f2a44,
+      ink-muted: #56627d,
+      focus: #2850c8,
+      danger: #c62f2f,
+      success: #237a43,
+      flag: #c62f2f,
+      n1: #2850c8,
+      n2: #237a43,
+      n3: #c62f2f,
+      n4: #6a3cb0,
+      n5: #94460d,
+      n6: #10706e,
+      n7: #1f2a44,
+      n8: #56627d,
+    ),
+    // Lined paper with a red margin on the left.
+    art: string.unquote(
+        'linear-gradient(90deg, transparent 71px, rgb(220 60 60 / 0.35) 71px 73px, transparent 73px), ' +
+          'repeating-linear-gradient(180deg, transparent 0 27px, rgb(74 124 201 / 0.18) 27px 28px)'
+      ),
+  ),
+  royal: (
+    scheme: dark,
+    colors: (
+      paper: #0d1633,
+      surface: #142047,
+      line: #2a3a6e,
+      track: #17244f,
+      tile: #1d2c5c,
+      tile-hover: #253770,
+      tile-edge: #d4af37,
+      tile-open: #0f1a3b,
+      board-bg: #142047,
+      board-line: #8a7230,
+      ink: #f7f1dc,
+      ink-muted: #cfc6a8,
+      focus: #f2d27a,
+      danger: #c0392b,
+      success: #9fe3b0,
+      flag: #f2d27a,
+      n1: #9ec5ff,
+      n2: #9fe3b0,
+      n3: #ffaa9e,
+      n4: #d7b8ff,
+      n5: #f2d27a,
+      n6: #8fe9e0,
+      n7: #f7f1dc,
+      n8: #cfc6a8,
+    ),
+    // A fine gold weave and a warm light from above.
+    art: string.unquote(
+        'radial-gradient(80% 40% at 50% 0%, rgb(212 175 55 / 0.16), transparent 70%), ' +
+          'repeating-linear-gradient(45deg, rgb(212 175 55 / 0.05) 0 1px, transparent 1px 22px), ' +
+          'repeating-linear-gradient(-45deg, rgb(212 175 55 / 0.05) 0 1px, transparent 1px 22px)'
+      ),
+  ),
+  galaxy: (
+    scheme: dark,
+    colors: (
+      paper: #070a1a,
+      surface: #10142b,
+      line: #262c55,
+      track: #141937,
+      tile: #1a2045,
+      tile-hover: #232a5a,
+      tile-edge: #6a7dff,
+      tile-open: #0b0f24,
+      board-bg: #0f1430,
+      board-line: #343d7a,
+      ink: #eef0ff,
+      ink-muted: #b4baea,
+      focus: #9fb0ff,
+      danger: #cc3355,
+      success: #8ff0c2,
+      flag: #ff8fb8,
+      n1: #8fb4ff,
+      n2: #8ff0c2,
+      n3: #ff8fb8,
+      n4: #d1a6ff,
+      n5: #ffd08a,
+      n6: #7ff0f0,
+      n7: #eef0ff,
+      n8: #b4baea,
+    ),
+    // Stars of different sizes and a purple nebula.
+    art: string.unquote(
+        'radial-gradient(circle, rgb(255 255 255 / 0.8) 1px, transparent 1.5px) 0 0 / 160px 160px, ' +
+          'radial-gradient(circle, rgb(255 255 255 / 0.5) 1px, transparent 1.5px) 70px 110px / 210px 210px, ' +
+          'radial-gradient(circle, rgb(200 210 255 / 0.6) 1.5px, transparent 2px) 120px 40px / 290px 290px, ' +
+          'radial-gradient(60% 45% at 75% 25%, rgb(139 92 246 / 0.22), transparent 70%), ' +
+          'radial-gradient(50% 40% at 15% 85%, rgb(59 130 246 / 0.16), transparent 70%)'
+      ),
+  ),
+);
+
+// Called at the end of styles.scss, so these win over the light and dark text colors there.
+// The second selector colors the previews in the customize dialog.
+@mixin special-themes {
+  @each $name, $theme in $special-themes {
+    :root[data-board-theme='#{$name}'],
+    [data-board-theme='#{$name}'] {
+      color-scheme: map.get($theme, scheme);
+      @include board-vars(map.get($theme, colors));
+      @if map.has-key($theme, art) {
+        --theme-art: #{map.get($theme, art)};
+      }
+      @if map.has-key($theme, font) {
+        --board-font: #{map.get($theme, font)};
+      }
+    }
   }
 }

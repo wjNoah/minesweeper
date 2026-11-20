@@ -9,6 +9,7 @@ import {
   TILE_IMAGE_KEY,
 } from './appearance.service';
 import { ImageError } from './image-resize';
+import { QUESTS_STORAGE_KEY, QuestService } from './quest.service';
 
 const TINY_IMAGE = 'data:image/png;base64,iVBORw0KGgo=';
 
@@ -54,6 +55,54 @@ describe('AppearanceService', () => {
 
     expect(root.dataset['boardTheme']).toBe('ocean');
     expect(JSON.parse(localStorage.getItem(APPEARANCE_KEY) ?? '{}').boardTheme).toBe('ocean');
+  });
+
+  describe('themes from quests', () => {
+    const firstWin = {
+      type: 'game-won',
+      difficulty: 'beginner',
+      seconds: 60,
+      noGuess: false,
+      hintsUsed: 0,
+      flagsPlaced: 2,
+      chords: 0,
+    } as const;
+
+    it('a locked theme cannot be chosen', () => {
+      const service = TestBed.inject(AppearanceService);
+      service.setBoardTheme('blueprint');
+      TestBed.tick();
+      expect(service.activeTheme()).toBe('classic');
+      expect(root.dataset['boardTheme']).toBe('classic');
+      expect(localStorage.getItem(APPEARANCE_KEY)).toBeNull();
+    });
+
+    it('can be chosen once its quest is done', () => {
+      const service = TestBed.inject(AppearanceService);
+      TestBed.inject(QuestService).record(firstWin);
+      service.setBoardTheme('blueprint');
+      TestBed.tick();
+      expect(root.dataset['boardTheme']).toBe('blueprint');
+    });
+
+    it('a saved theme that is still locked (edited by hand) falls back to Classic', () => {
+      localStorage.setItem(APPEARANCE_KEY, JSON.stringify({ boardTheme: 'lava' }));
+      const service = TestBed.inject(AppearanceService);
+      TestBed.tick();
+      expect(service.activeTheme()).toBe('classic');
+      expect(root.dataset['boardTheme']).toBe('classic');
+    });
+
+    it('a saved theme whose quest is done is applied at startup', () => {
+      localStorage.setItem(APPEARANCE_KEY, JSON.stringify({ boardTheme: 'lava' }));
+      localStorage.setItem(
+        QUESTS_STORAGE_KEY,
+        JSON.stringify({ 'beat-hard-bot': { progress: 1, completedAt: 5 } }),
+      );
+      TestBed.inject(AppearanceService);
+      TestBed.tick();
+      expect(root.dataset['boardTheme']).toBe('lava');
+    });
   });
 
   it('applies stored pictures at startup', () => {

@@ -11,13 +11,13 @@ describe('parseAppearance', () => {
       boardTheme: 'forest',
       tileImageMode: 'board',
     });
-    expect(parseAppearance({ boardTheme: 'neon', tileImageMode: 'huge' })).toEqual(
+    expect(parseAppearance({ boardTheme: 'disco', tileImageMode: 'huge' })).toEqual(
       DEFAULT_APPEARANCE,
     );
   });
 
   it('knows the theme ids', () => {
     expect(isBoardThemeId('slate')).toBe(true);
-    expect(isBoardThemeId('neon')).toBe(false);
+    expect(isBoardThemeId('disco')).toBe(false);
   });
 });

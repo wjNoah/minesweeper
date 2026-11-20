@@ -1,0 +1,65 @@
+<dialog #dialog class="dialog" aria-labelledby="modes-title" (click)="onDialogClick($event)">
+  <div class="panel">
+    <header class="head">
+      <h2 id="modes-title">Modes</h2>
+      <button type="button" class="icon-button" aria-label="Close modes" (click)="close()">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+      </button>
+    </header>
+
+    <div class="body">
+      <section aria-labelledby="game-mode-title">
+        <h3 id="game-mode-title">Game mode</h3>
+        <div class="modes" role="group" aria-labelledby="game-mode-title">
+          @for (mode of modes; track mode.id) {
+            @let quest = lockedBy(mode.id);
+            <button
+              type="button"
+              class="mode"
+              [class.locked]="quest"
+              [attr.aria-pressed]="game.gameMode() === mode.id"
+              [attr.aria-disabled]="quest ? true : null"
+              (click)="choose(mode.id)"
+            >
+              <span class="name">{{ mode.label }}</span>
+              <span class="description">{{ mode.description }}</span>
+              @if (quest) {
+                <span class="lock">
+                  <svg viewBox="0 0 16 16" aria-hidden="true">
+                    <rect x="3.5" y="7" width="9" height="6.5" rx="1.5" />
+                    <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" />
+                  </svg>
+                  Locked. Quest: {{ quest.title }} ({{ quest.description }})
+                </span>
+              }
+            </button>
+          }
+        </div>
+        <p class="hint note">Choosing a mode starts a new game. Best times count in Normal only.</p>
+      </section>
+
+      <section aria-labelledby="boards-title">
+        <h3 id="boards-title">Boards</h3>
+        <label class="row">
+          <span>
+            <span class="label">No guessing</span>
+            <span class="hint">
+              Every board can be solved by logic alone. Best times are kept separately. Applies from
+              the next game.
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            role="switch"
+            [checked]="settings.settings().noGuess"
+            (change)="setNoGuess($event)"
+          />
+        </label>
+      </section>
+    </div>
+
+    <footer class="foot">
+      <button type="button" class="button primary" (click)="close()">Done</button>
+    </footer>
+  </div>
+</dialog>

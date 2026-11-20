@@ -1,0 +1,59 @@
+<dialog #dialog class="dialog" aria-labelledby="quests-title" (click)="onDialogClick($event)">
+  <div class="panel">
+    <header class="head">
+      <h2 id="quests-title">Quests</h2>
+      <button type="button" class="icon-button" aria-label="Close quests" (click)="close()">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+      </button>
+    </header>
+
+    <div class="body">
+      <p class="summary">
+        <span class="count">{{ quests.completedCount() }} of {{ quests.total }}</span> done
+      </p>
+
+      <ul class="list">
+        @for (entry of sorted(); track entry.quest.id) {
+          <li class="quest" [class.done]="entry.completedAt !== null">
+            <div class="text">
+              <span class="title">{{ entry.quest.title }}</span>
+              <span class="description">{{ entry.quest.description }}</span>
+              @if (rewardText(entry.quest); as reward) {
+                <span class="reward">
+                  {{ entry.completedAt !== null ? 'Unlocked' : 'Unlocks' }} {{ reward }}
+                </span>
+              }
+            </div>
+            @if (entry.completedAt !== null) {
+              <span class="state">
+                <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" /></svg>
+                Done
+              </span>
+            } @else {
+              <span class="state count">{{ entry.progress }} / {{ entry.quest.goal }}</span>
+              <div
+                class="track"
+                role="progressbar"
+                [attr.aria-label]="entry.quest.title + ' progress'"
+                [attr.aria-valuenow]="entry.progress"
+                aria-valuemin="0"
+                [attr.aria-valuemax]="entry.quest.goal"
+              >
+                <span
+                  class="fill"
+                  [style.transform]="
+                    'scaleX(' + percent(entry.progress, entry.quest.goal) / 100 + ')'
+                  "
+                ></span>
+              </div>
+            }
+          </li>
+        }
+      </ul>
+    </div>
+
+    <footer class="foot">
+      <button type="button" class="button primary" (click)="close()">Done</button>
+    </footer>
+  </div>
+</dialog>

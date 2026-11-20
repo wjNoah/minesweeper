@@ -1,4 +1,7 @@
-/** The colors of each theme live in src/_board-themes.scss; this list is for the picker. */
+/**
+ * The colors of each theme live in src/_board-themes.scss; this list is for the picker.
+ * All after Slate are unlocked by quests (see the rewards in quest.model.ts).
+ */
 export const BOARD_THEMES = [
   { id: 'classic', label: 'Classic' },
   { id: 'ocean', label: 'Ocean' },
@@ -6,6 +9,17 @@ export const BOARD_THEMES = [
   { id: 'sunset', label: 'Sunset' },
   { id: 'lavender', label: 'Lavender' },
   { id: 'slate', label: 'Slate' },
+  { id: 'blueprint', label: 'Blueprint' },
+  { id: 'candy', label: 'Candy' },
+  { id: 'neon', label: 'Neon Nights' },
+  { id: 'terminal', label: 'Terminal' },
+  { id: 'lava', label: 'Lava' },
+  { id: 'cat', label: 'Cat Café' },
+  { id: 'arcade', label: 'Arcade' },
+  { id: 'chalkboard', label: 'Chalkboard' },
+  { id: 'notebook', label: 'Notebook' },
+  { id: 'royal', label: 'Royal' },
+  { id: 'galaxy', label: 'Galaxy' },
 ] as const;
 
 export type BoardThemeId = (typeof BOARD_THEMES)[number]['id'];

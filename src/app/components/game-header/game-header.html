@@ -25,7 +25,12 @@
       >
         Reveal
       </button>
-      <button type="button" [attr.aria-pressed]="game.flagMode()" (click)="game.setFlagMode(true)">
+      <button
+        type="button"
+        [attr.aria-pressed]="game.flagMode()"
+        [disabled]="game.gameMode() === 'no-flags'"
+        (click)="game.setFlagMode(true)"
+      >
         Flag
       </button>
     </div>
@@ -37,6 +42,15 @@
         (click)="game.showHint()"
       >
         Hint
+      </button>
+      <button
+        type="button"
+        class="button"
+        aria-haspopup="dialog"
+        [attr.aria-label]="'Modes, now ' + modeLabel()"
+        (click)="openModes.emit()"
+      >
+        {{ game.gameMode() === 'normal' ? 'Modes' : modeLabel() }}
       </button>
       <button type="button" class="button" (click)="game.newGame()">New game</button>
     }

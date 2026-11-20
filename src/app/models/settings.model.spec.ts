@@ -20,6 +20,12 @@ describe('parseSettings', () => {
     expect(settings.safeArea).toBe(true);
   });
 
+  it('remembers the game mode and ignores unknown ones', () => {
+    expect(parseSettings({}).gameMode).toBe('normal');
+    expect(parseSettings({ gameMode: 'fog' }).gameMode).toBe('fog');
+    expect(parseSettings({ gameMode: 'chaos' }).gameMode).toBe('normal');
+  });
+
   it('shows the controls and info unless the player turned them off', () => {
     expect(parseSettings({}).showGuide).toBe(true);
     expect(parseSettings({ showGuide: false }).showGuide).toBe(false);

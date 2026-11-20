@@ -1,3 +1,5 @@
+import { GameModeId, isGameModeId } from './game-mode.model';
+
 export type ThemeSetting = 'system' | 'light' | 'dark';
 export type CellScale = 1 | 1.25 | 1.5;
 export type KeyAction = 'flag' | 'reveal' | 'newGame' | 'flagMode' | 'hint';
@@ -17,6 +19,8 @@ export interface Settings {
   haptics: boolean;
   /** Everything below the board: controls, text about the game, feedback. Off leaves only the game. */
   showGuide: boolean;
+  /** The chosen game mode. Used only while it is unlocked; otherwise the game plays Normal. */
+  gameMode: GameModeId;
   /** Values are KeyboardEvent.key in lower case, so they follow the user's keyboard layout. */
   keys: KeyBindings;
 }
@@ -30,6 +34,7 @@ export const DEFAULT_SETTINGS: Settings = {
   highlightNeighbors: true,
   haptics: true,
   showGuide: true,
+  gameMode: 'normal',
   keys: { flag: 'f', reveal: ' ', newGame: 'r', flagMode: 'm', hint: 'h' },
 };
 
@@ -106,6 +111,7 @@ export function parseSettings(value: unknown): Settings {
     highlightNeighbors: bool('highlightNeighbors', DEFAULT_SETTINGS.highlightNeighbors),
     haptics: bool('haptics', DEFAULT_SETTINGS.haptics),
     showGuide: bool('showGuide', DEFAULT_SETTINGS.showGuide),
+    gameMode: isGameModeId(stored['gameMode']) ? stored['gameMode'] : DEFAULT_SETTINGS.gameMode,
     keys: parseKeys(stored['keys']),
   };
 }

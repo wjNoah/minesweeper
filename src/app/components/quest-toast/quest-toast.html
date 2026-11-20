@@ -1,0 +1,17 @@
+<div class="region" role="status">
+  @for (announcement of announcements(); track announcement.id) {
+    <button type="button" class="toast" (click)="show()">
+      <span class="label">
+        {{ announcement.quests.length === 1 ? 'Quest complete' : 'Quests complete' }}
+      </span>
+      <span class="names">
+        @for (quest of announcement.quests; track quest.id; let last = $last) {
+          {{ quest.title }}{{ last ? '' : ', ' }}
+        }
+      </span>
+      @for (reward of rewards(); track reward) {
+        <span class="reward">{{ capitalize(reward) }} unlocked</span>
+      }
+    </button>
+  }
+</div>

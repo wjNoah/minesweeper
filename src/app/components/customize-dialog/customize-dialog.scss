@@ -21,10 +21,25 @@
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--paper);
+  // The card's own theme colors, also for the text (a dark theme has light text).
+  color: var(--ink);
   transition: border-color 150ms ease;
 
   &:hover {
     border-color: var(--ink-muted);
+  }
+
+  // A locked theme shows its colors faded, with the quest that unlocks it.
+  &.locked {
+    cursor: default;
+
+    .preview {
+      opacity: 0.35;
+    }
+
+    &:hover {
+      border-color: var(--line);
+    }
   }
 
   // Thicker ring marks the chosen theme without relying on color.
@@ -72,6 +87,25 @@
 .name {
   font-size: 0.8125rem;
   font-weight: 600;
+}
+
+.lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+  text-align: center;
+
+  svg {
+    flex: none;
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+  }
 }
 
 .icon-preview {

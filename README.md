@@ -33,6 +33,7 @@
 - [On your phone](#on-your-phone)
 - [1v1: a bot or a friend](#1v1-a-bot-or-a-friend)
 - [Online 1v1 server (Cloudflare)](#online-1v1-server-cloudflare)
+- [Quests](#quests)
 - [Feedback](#feedback)
 - [Project structure](#project-structure)
 - [How it works](#how-it-works)
@@ -119,7 +120,7 @@ cursor and `Enter` always reveals, so those cannot be reassigned.
 
 ### No guessing
 
-Turn it on in **Settings → Gameplay**. On your first click the game places the mines, then
+Turn it on under **Modes → Boards**. On your first click the game places the mines, then
 **plays the board itself with a solver**. If the solver ever needs a guess, the board is thrown
 away and a new one is tried (on Expert this usually takes a few tries and well under a second).
 The solver only uses three rules that a person can use too:
@@ -133,6 +134,22 @@ The solver only uses three rules that a person can use too:
 
 No-guessing games have their own best times, because they are easier than games with forced
 guesses.
+
+### Game modes
+
+The **Modes** button next to New game picks how the next game is played. Three modes are unlocked
+by beating the harder difficulties, and one by playing a lot:
+
+| Mode         | What changes                                                                              | Unlocked by              |
+| ------------ | ----------------------------------------------------------------------------------------- | ------------------------ |
+| No flags     | Flags are switched off; every mine stays in your head                                     | Win an Intermediate game |
+| Mirror       | Every click, right-click and key lands on the cell mirrored from left to right            | Win an Intermediate game |
+| Fog          | Numbers fade 2.5 seconds after they open; point at, focus or press a cell to see it again | Win an Expert game       |
+| Bouncy flags | Flags wiggle, and every 6 seconds one hops to a hidden cell next to it                    | Finish 25 games          |
+
+On phones and tablets, Fog fades numbers to a faint shadow instead of hiding them, because there
+is no pointer to hover with. Choosing a mode starts a new game. Best times count in Normal only, and 1v1 rounds always play
+Normal.
 
 ### Hints
 
@@ -378,6 +395,41 @@ It stays this cheap because of three choices:
 - Messages over 10,000 characters, or more than 60 in 10 seconds, close the connection.
 - Each browser still checks every message from the opponent before using it.
 
+## Quests
+
+The trophy button in the header opens a list of quests, like "Win an Expert game" or "Win 3
+games in a row". Each shows its progress, and a short message appears when one is done. Progress
+is saved in the browser.
+
+Every quest unlocks something: a theme, a game mode (see [Game modes](#game-modes)) or both. The
+six original themes are free for everyone.
+
+| Quest                                 | Unlocks                        |
+| ------------------------------------- | ------------------------------ |
+| First sweep (first win)               | Blueprint theme                |
+| Getting the hang of it (10 wins)      | Candy theme                    |
+| Moving up (Intermediate win)          | No flags and Mirror modes      |
+| Expert (Expert win)                   | Fog mode                       |
+| Quick hands (Beginner under 30 s)     | Arcade theme                   |
+| Pure logic (no-guessing win, no hint) | Chalkboard theme               |
+| No flags needed (win without a flag)  | Cat Café theme                 |
+| Hot streak (3 wins in a row)          | Neon Nights theme              |
+| Chord player (50 chords)              | Notebook theme                 |
+| Regular (25 games)                    | Royal theme, Bouncy flags mode |
+| Beat the bot                          | Terminal theme                 |
+| Machine breaker (beat the Hard bot)   | Lava theme                     |
+| Duelist (beat a friend)               | Galaxy theme                   |
+
+These themes set every color themselves, text and numbers too, and some draw their own background
+in CSS or use their own font for the numbers. Every number keeps 4.5:1 contrast. Locked themes show
+the quest that unlocks them in Customize.
+
+- Custom boards don't count, so a tiny board with one mine can't complete quests.
+- 1v1 wins count for the 1v1 quests only, and only once both results are in.
+- The rules are pure functions in [`quest.model.ts`](src/app/models/quest.model.ts): each quest
+  takes its progress and a game result and returns the new progress. A new quest is one entry
+  in that list.
+
 ## Feedback
 
 **Send feedback** at the bottom of the page opens a short form: Bug, Idea or Other, a message and
@@ -406,6 +458,8 @@ src/
 │   │   ├── appearance.model.ts  colour theme list
 │   │   ├── match.model.ts       1v1 rules, messages, who wins, message validation
 │   │   ├── feedback.model.ts    the feedback form: checks and how it is sent
+│   │   ├── quest.model.ts       the quests and how a game result moves them on
+│   │   ├── game-mode.model.ts   the game modes and where Mirror sends a move
 │   │   ├── bot.model.ts         the three bot strengths
 │   │   └── navigation.ts        arrow keys and W A S D to cursor steps
 │   ├── services/          State (signals) and logic
@@ -417,13 +471,14 @@ src/
 │   │   ├── match-transport.ts   what an opponent must offer (a person or the bot)
 │   │   ├── connection.service.ts, room-code.ts   a person online, through the relay
 │   │   ├── feedback.service.ts  sends the feedback form to Netlify
+│   │   ├── quest.service.ts     quest progress, saved in the browser
 │   │   ├── bot.ts, bot-opponent.ts               the bot: its moves, and playing in real time
 │   │   └── image-resize.ts      shrinks uploaded pictures
 │   └── components/        Display only: they show state and emit events
 │       ├── board, cell, game-header, difficulty-picker, controls-hint
 │       ├── settings-dialog, customize-dialog, picture-picker
 │       ├── match-dialog, match-bar
-│       └── feedback-dialog
+│       └── feedback-dialog, quests-dialog, quest-toast, modes-dialog
 ├── _board-themes.scss     the six colour themes (light and dark)
 ├── _dialog.scss           shared look of the dialogs
 └── styles.scss            design tokens, dark mode, shared controls

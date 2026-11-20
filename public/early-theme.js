@@ -18,6 +18,23 @@
 
     var appearance = read('minesweeper.appearance');
     var themes = ['classic', 'ocean', 'forest', 'sunset', 'lavender', 'slate'];
+    // Themes from quests: only shown here once their quest is done.
+    var rewards = {
+      blueprint: 'first-win',
+      candy: 'ten-wins',
+      neon: 'streak',
+      terminal: 'beat-bot',
+      lava: 'beat-hard-bot',
+      cat: 'no-flags',
+      arcade: 'quick-beginner',
+      chalkboard: 'pure-logic',
+      notebook: 'chords',
+      royal: 'regular',
+      galaxy: 'beat-friend',
+    };
+    var quests = read('minesweeper.quests');
+    var rewardQuest = quests[rewards[appearance.boardTheme]];
+    if (rewardQuest && rewardQuest.completedAt) themes.push(appearance.boardTheme);
     if (themes.indexOf(appearance.boardTheme) !== -1) {
       root.dataset.boardTheme = appearance.boardTheme;
     }

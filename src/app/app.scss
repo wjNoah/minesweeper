@@ -12,8 +12,8 @@ app-game-header,
 app-controls-hint,
 app-about,
 .page-foot {
-  // Wide enough for the title, the difficulty tabs and four tool buttons in one row (768px).
-  width: min(100%, 48rem);
+  // Wide enough for the title, the difficulty tabs and five tool buttons in one row (800px).
+  width: min(100%, 50rem);
 }
 
 .page-foot {
@@ -106,8 +106,8 @@ h1 {
 // the panel, which measured more than twice as slow.
 :host-context([data-page-image]) .app {
   width: fit-content;
-  // The content column (48rem) plus this panel's side padding (2 × 1.25rem).
-  min-width: min(100% - 2rem, 50.5rem);
+  // The content column (50rem) plus this panel's side padding (2 × 1.25rem).
+  min-width: min(100% - 2rem, 52.5rem);
   max-width: calc(100% - 2rem);
   margin: 1.5rem auto;
   border: 1px solid var(--line);
@@ -120,6 +120,16 @@ h1 {
   .app {
     gap: 1rem;
     padding: 1.5rem 0.75rem 3rem;
+  }
+
+  // Five tool buttons next to the name: a little smaller, still easy to tap.
+  .icon-button {
+    width: 36px;
+    height: 36px;
+
+    &.text {
+      padding: 0 0.5rem;
+    }
   }
 
   // Phone: the name as a two-line wordmark beside the buttons, about as tall as they are.
@@ -141,9 +151,9 @@ h1 {
   }
 }
 
-// Title, difficulty tabs and four tool buttons need about 768px in one row.
+// Title, difficulty tabs and five tool buttons need about 800px in one row.
 // Narrower windows put the tabs on their own row below the title.
-@media (max-width: 840px) {
+@media (max-width: 880px) {
   .top {
     grid-template-areas:
       'title tools'

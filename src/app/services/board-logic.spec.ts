@@ -1,6 +1,7 @@
 import {
   chordCell,
   computeAdjacentCounts,
+  bounceFlag,
   countFlags,
   coverHitMines,
   countMines,
@@ -269,6 +270,39 @@ describe('isWon and isLost', () => {
     expect(grid[0][0].isFlagged).toBe(true);
     expect(grid[1][1].isFlagged).toBe(true);
     expect(countFlags(grid)).toBe(2);
+  });
+});
+
+describe('bounceFlag', () => {
+  it('moves one flag to a hidden, unflagged cell next to it', () => {
+    const grid = toggleFlag(gridFromLayout(['...', '...', '...']), 1, 1);
+    const next = bounceFlag(grid, () => 0);
+    expect(next[1][1].isFlagged).toBe(false);
+    expect(countFlags(next)).toBe(1);
+    const moved = next.flat().find((c) => c.isFlagged);
+    expect(moved && Math.abs(moved.row - 1) <= 1 && Math.abs(moved.col - 1) <= 1).toBe(true);
+  });
+
+  it('never lands on an opened cell or on another flag', () => {
+    // The flag at 0,0 can only go to 1,1: 0,1 is flagged, 1,0 is open.
+    let grid = revealCell(gridFromLayout(['..*', '.*.', '...']), 1, 0);
+    grid = toggleFlag(grid, 0, 0);
+    grid = toggleFlag(grid, 0, 1);
+    for (let i = 0; i < 20; i++) {
+      const next = bounceFlag(grid, () => i / 20);
+      expect(next[1][0].isFlagged).toBe(false);
+      expect(countFlags(next)).toBe(2);
+    }
+  });
+
+  it('leaves the flag of a mine that was hit where it is', () => {
+    const hit = coverHitMines(revealCell(gridFromLayout(['*.', '..']), 0, 0)).grid;
+    expect(bounceFlag(hit)).toBe(hit);
+  });
+
+  it('changes nothing when no flag can move', () => {
+    const noFlags = gridFromLayout(['..', '..']);
+    expect(bounceFlag(noFlags)).toBe(noFlags);
   });
 });
 
